@@ -56,10 +56,7 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
     ]);
 
     // Estadísticas básicas
-    const totalRevenue = allOrders.reduce(
-      (sum: number, order: any) => sum + order.totalPrice,
-      0,
-    );
+
     const totalUsers = allUsers.length;
     const totalOrders = allOrders.length;
 
@@ -84,32 +81,6 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
       }),
     );
 
-    // Revenue por mes (últimos 6 meses)
-    const revenueByMonth: Array<{
-      month: string;
-      revenue: number;
-      orders: number;
-    }> = [];
-    for (let i = 5; i >= 0; i--) {
-      const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = month.toLocaleDateString("es-ES", {
-        month: "short",
-        year: "numeric",
-      });
-      const monthOrders = allOrders.filter((order: any) => {
-        const orderDate = new Date(order.createdAt);
-        return (
-          orderDate.getMonth() === month.getMonth() &&
-          orderDate.getFullYear() === month.getFullYear()
-        );
-      });
-      revenueByMonth.push({
-        month: monthName,
-        revenue: monthOrders.reduce((sum, order) => sum + order.totalPrice, 0),
-        orders: monthOrders.length,
-      });
-    }
-
     // Productos destacados (top 5)
     const productMap = new Map<
       string,
@@ -132,37 +103,6 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
     const topProducts = Array.from(productMap.values())
       .sort((a, b) => b.sales - a.sales)
       .slice(0, 5);
-
-    // Crecimiento de usuarios (últimos 6 meses)
-    const userGrowth: Array<{
-      month: string;
-      users: number;
-      newUsers: number;
-    }> = [];
-    for (let i = 5; i >= 0; i--) {
-      const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = month.toLocaleDateString("es-ES", {
-        month: "short",
-        year: "numeric",
-      });
-      const monthUsers = allUsers.filter((user: any) => {
-        const userDate = new Date(user.createdAt);
-        return (
-          userDate.getMonth() === month.getMonth() &&
-          userDate.getFullYear() === month.getFullYear()
-        );
-      });
-      const totalUsersUntilMonth = allUsers.filter(
-        (user: any) =>
-          new Date(user.createdAt) <=
-          new Date(now.getFullYear(), now.getMonth() - i + 1, 0),
-      ).length;
-      userGrowth.push({
-        month: monthName,
-        users: totalUsersUntilMonth,
-        newUsers: monthUsers.length,
-      });
-    }
 
     // Actividad reciente (últimos 5 pedidos)
     const recentActivity: Array<{
@@ -194,7 +134,7 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
     });
 
     // Métricas adicionales
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
     const activeUsers = allUsers.filter((user: any) =>
       allOrders.some((order: any) => order.user.email === user.email),
     ).length;
@@ -202,31 +142,12 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
     const conversionRate =
       totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0;
 
-    // Top 5 usuarios por gasto
-    const topUsers = allUsers
-      .sort((a, b) => b.totalSpent - a.totalSpent)
-      .slice(0, 5)
-      .map((u) => ({
-        ...u,
-        name: u.fullName,
-        _count: { orders: 0 },
-        isBlocked: false,
-        blockReason: null,
-        blockExpiresAt: null,
-        isActive: true,
-      }));
-
     const stats = {
       totalUsers,
       totalOrders,
-      totalRevenue,
-      topUsers,
-      revenueByMonth,
       salesByType,
       recentActivity,
       topProducts,
-      userGrowth,
-      averageOrderValue,
       conversionRate,
       activeUsers,
       totalCredits,
