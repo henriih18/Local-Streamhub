@@ -1,0 +1,441 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                       String             @id @default(cuid())
+  email                    String             @unique
+  name                     String?
+  fullName                 String? // Nombre completo para registro
+  username                 String?            @unique // Nombre de usuario único
+  password                 String?
+  role                     Role               @default(USER)
+  avatar                   String?
+  phone                    String?            @unique // Teléfono único
+  credits                  Float              @default(0)
+  targetSpent              Float              @default(0) // Target for special offers
+  totalSpent               Float              @default(0) // Total spent by user
+  isBlocked                Boolean            @default(false)
+  blockReason              String?
+  blockExpiresAt           DateTime?
+  country                  String? // País del usuario
+  language                 String             @default("es") // Idioma preferido
+  emailVerified            Boolean            @default(false)
+  emailVerificationCode    String? // Código para verificar email
+  emailVerificationExpires DateTime? // Expiración del código
+  acceptMarketing          Boolean            @default(false) // Acepta marketing
+  isActive                 Boolean            @default(true)
+  lastLogin                DateTime?
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+  orders                   Order[]
+  creditRecharges          CreditRecharge[]
+  cart                     Cart?
+  profilesSold             AccountProfile[]
+  accountsSold             AccountStock[]
+  accounts                 Account[]
+  exclusiveStocksSold      ExclusiveStock[] // Exclusive stocks sold to this user
+  sessions                 Session[]
+  specialOffers            SpecialOffer[]
+  exclusiveAccounts        ExclusiveAccount[] // Exclusive accounts this user has access to
+  userWarnings             UserWarning[]
+  userBlocks               UserBlock[]
+  sentMessages             Message[]          @relation("SentMessages")
+  receivedMessages         Message[]          @relation("ReceivedMessages")
+  telegramChatId           String?            @unique
+  resetPasswordToken        String?  @unique
+  resetPasswordExpires      DateTime?
+  tokenVersion             Int                @default(0)
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model StreamingType {
+  id        String             @id @default(cuid())
+  name      String             @unique
+  icon      String? // URL o emoji para el icono
+  color     String? // Color para el tema
+  imageUrl  String? // URL de la imagen subida (WebP)
+  isActive  Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  accounts  StreamingAccount[]
+}
+
+model StreamingAccount {
+  id              String           @id @default(cuid())
+  name            String
+  description     String
+  price           Float
+  type            String // Netflix, Disney+, HBO Max, etc.
+  duration        String // 1 month, 3 months, etc.
+  quality         String // HD, 4K, etc.
+  screens         Int // Number of screens
+  isActive        Boolean          @default(true)
+  image           String?
+  saleType        SaleType         @default(FULL) // FULL account or PROFILES
+  maxProfiles     Int? // Max number of profiles for sale
+  pricePerProfile Float?
+  order           Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  orders          Order[]
+  accountStocks   AccountStock[] // Individual accounts in stock
+  profileStocks   AccountProfile[] // Individual profiles in stock
+  vendorPricing   VendorPricing?
+  cartItems       CartItem[]
+  streamingType   StreamingType?   @relation(fields: [type], references: [name])
+  specialOffers   SpecialOffer[]
+
+  @@unique([name, type])
+}
+
+model Order {
+  id                 String            @id @default(cuid())
+  userId             String
+  streamingAccountId String?
+  exclusiveAccountId String?
+  accountStockId     String?
+  accountProfileId   String?
+  exclusiveStockId   String?
+  accountEmail       String?           @db.Text
+  accountPassword    String?           @db.Text
+  profileName        String?           @db.Text
+  profilePin         String?           @db.Text
+  saleType           SaleType          @default(FULL)
+  quantity           Int               @default(1) // Number of profiles or full accounts
+  status             OrderStatus       @default(PENDING)
+  totalPrice         Float
+  expiresAt          DateTime
+  renewalCount       Int               @default(0) // Number of times this order has been renewed
+  lastRenewedAt      DateTime? // Date of last renewal
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  user               User              @relation(fields: [userId], references: [id])
+  streamingAccount   StreamingAccount? @relation(fields: [streamingAccountId], references: [id])
+  exclusiveAccount   ExclusiveAccount? @relation(fields: [exclusiveAccountId], references: [id])
+  accountStock       AccountStock?     @relation(fields: [accountStockId], references: [id])
+  accountProfile     AccountProfile?   @relation(fields: [accountProfileId], references: [id])
+  exclusiveStock     ExclusiveStock?   @relation(fields: [exclusiveStockId], references: [id])
+}
+
+model CreditRecharge {
+  id        String         @id @default(cuid())
+  userId    String
+  amount    Float
+  method    String // Transferencia, Billetera digital, etc.
+  reference String?
+  status    RechargeStatus @default(PENDING)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id])
+}
+
+model AccountProfile {
+  id                 String           @id @default(cuid())
+  streamingAccountId String
+  email              String           @db.Text
+  password           String           @db.Text
+  profileName        String           @db.Text
+  profilePin         String?          @db.Text
+  isAvailable        Boolean          @default(true)
+  soldToUserId       String?
+  soldAt             DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  streamingAccount   StreamingAccount @relation(fields: [streamingAccountId], references: [id])
+  soldToUser         User?            @relation(fields: [soldToUserId], references: [id])
+  orders             Order[]
+}
+
+model AccountStock {
+  id                 String           @id @default(cuid())
+  streamingAccountId String
+  email              String           @db.Text
+  password           String           @db.Text
+  isAvailable        Boolean          @default(true)
+  soldToUserId       String?
+  soldAt             DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  streamingAccount   StreamingAccount @relation(fields: [streamingAccountId], references: [id])
+  soldToUser         User?            @relation(fields: [soldToUserId], references: [id])
+  orders             Order[]
+}
+
+model Cart {
+  id          String     @id @default(cuid())
+  userId      String     @unique
+  items       CartItem[]
+  totalAmount Float      @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation(fields: [userId], references: [id])
+}
+
+model CartItem {
+  id                 String            @id @default(cuid())
+  cartId             String
+  streamingAccountId String? // Optional for regular accounts
+  exclusiveAccountId String? // Optional for exclusive accounts
+  quantity           Int               @default(1)
+  saleType           SaleType          @default(FULL)
+  priceAtTime        Float // Price when added to cart
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  cart               Cart              @relation(fields: [cartId], references: [id])
+  streamingAccount   StreamingAccount? @relation(fields: [streamingAccountId], references: [id])
+  exclusiveAccount   ExclusiveAccount? @relation(fields: [exclusiveAccountId], references: [id])
+}
+
+model SpecialOffer {
+  id                 String           @id @default(cuid())
+  userId             String
+  streamingAccountId String
+  discountPercentage Float // Discount percentage (e.g., 20 for 20% off)
+  specialPrice       Float? // Fixed special price
+  targetSpent        Float // Target amount to unlock offer
+  expiresAt          DateTime?
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  user               User             @relation(fields: [userId], references: [id])
+  streamingAccount   StreamingAccount @relation(fields: [streamingAccountId], references: [id])
+}
+
+model ExclusiveAccount {
+  id              String           @id @default(cuid())
+  name            String
+  description     String
+  type            String // Netflix, Disney+, etc.
+  price           Float
+  duration        String // Duration in days
+  quality         String? // HD, Full HD, 4K, etc.
+  screens         String? // Number of screens
+  saleType        String           @default("FULL") // FULL or PROFILES
+  maxProfiles     Int? // Maximum profiles for PROFILE sales
+  pricePerProfile Float? // Price per profile for PROFILE sales
+  maxSlots        Int // Maximum number of users
+  isPublic        Boolean          @default(false) // If true, all users can see it
+  isActive        Boolean          @default(true)
+  expiresAt       DateTime? // Optional expiration date
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  orders          Order[]
+  allowedUsers    User[] // Users with access to this exclusive account
+  exclusiveStocks ExclusiveStock[] // Stock items for this exclusive account
+  cartItems       CartItem[] // Cart items for this exclusive account
+}
+
+model ExclusiveStock {
+  id                 String           @id @default(cuid())
+  exclusiveAccountId String
+  email              String           @db.Text
+  password           String           @db.Text
+  pin                String?          @db.Text
+  profileName        String?          @db.Text
+  isAvailable        Boolean          @default(true)
+  soldToUserId       String?
+  soldAt             DateTime?
+  notes              String? // Additional notes about this stock item
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  exclusiveAccount   ExclusiveAccount @relation(fields: [exclusiveAccountId], references: [id])
+  soldToUser         User?            @relation(fields: [soldToUserId], references: [id])
+  orders             Order[]
+}
+
+
+model Message {
+  id         String      @id @default(cuid())
+  senderId   String
+  receiverId String
+  title      String
+  content    String
+  type       MessageType @default(GENERAL)
+  isRead     Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  sender     User        @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User        @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
+
+model SupportContact {
+  id          String   @id @default(cuid())
+  name        String // Nombre descriptivo (Ej: "Soporte WhatsApp", "Llamadas")
+  number      String // Número de teléfono
+  type        String // "whatsapp", "phone", "telegram", etc.
+  description String? // Descripción opcional
+  isActive    Boolean  @default(true)
+  order       Int      @default(0) // Orden de visualización
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model UserWarning {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String // Warning message
+  reason    String // Reason for warning
+  severity  String   @default("LOW") // LOW, MEDIUM, HIGH
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model UserBlock {
+  id        String    @id @default(cuid())
+  userId    String
+  blockType String // temporary, permanent
+  duration  String? // Duration in hours for temporary blocks
+  reason    String // Reason for block
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime? // Expiration date for temporary blocks
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  name        String // Nombre del gasto (Ej: "Hosting", "Marketing")
+  description String? // Descripción opcional
+  amount      Float // Monto del gasto
+  category    String // Categoría (Ej: "Hosting", "Marketing", "Streaming", "Otros")
+  frequency   String    @default("MENSUAL") // MENSUAL, ANUAL, UNICO
+  dueDate     DateTime? // Fecha de vencimiento para gastos recurrentes
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model MonthlyProfit {
+  id              String   @id @default(cuid())
+  year            Int // Año (Ej: 2025)
+  month           Int // Mes (1-12)
+  revenue         Float // Ingresos del mes
+  expenses        Float // Gastos del mes
+  profits         Float // Ganancias del mes
+  profitMargin    Float // Margen de ganancia (%)
+  totalRecharges  Int // Número total de recargas
+  uniqueUsers     Int // Usuarios únicos que recargaron
+  averageRecharge Float // Promedio de recarga
+  details         Json? // Detalles adicionales en formato JSON
+  isClosed        Boolean  @default(false) // Si el mes está cerrado/archivado
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([year, month]) // Evitar duplicados por mes-año
+}
+
+model AnnouncementBanner {
+  id              String   @id @default(cuid())
+  text            String // Texto del banner
+  isActive        Boolean  @default(true) // Si está activo o no
+  speed           Int      @default(20) // Velocidad en segundos
+  backgroundColor String   @default("#000000") // Color de fondo
+  textColor       String   @default("#ffffff") // Color del texto
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TelegramLinkToken {
+  id        String   @id @default(cuid())
+  tempToken String   @unique // Token generado para el deep link
+  state     String   @default("PENDING") // PENDING, WAITING_PHONE, LINKED
+  chatId    String? // Se llena cuando el usuario habla al bot
+  phone     String? // Se llena cuando comparte el contacto
+  userId    String? // Se llena cuando se completa la vinculación
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([tempToken])
+  @@index([chatId])
+}
+
+enum Role {
+  USER
+  VENDEDOR
+  ADMIN
+}
+
+enum SaleType {
+  FULL
+  PROFILES
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  EXPIRED
+  REHABILITATED
+}
+
+enum RechargeStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum MessageType {
+  GENERAL
+  WARNING
+  BLOCK_NOTICE
+  UNBLOCK_NOTICE
+  RESTRICTION_NOTICE
+  SYSTEM_NOTIFICATION
+}
+
+model VendorPricing {
+  id                 String   @id @default(cuid())
+  streamingAccountId String   @unique
+  vendorPrice        Float
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  streamingAccount StreamingAccount @relation(fields: [streamingAccountId], references: [id])
+}

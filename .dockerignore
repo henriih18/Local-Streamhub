@@ -1,0 +1,26 @@
+node_modules
+.next
+.git
+.gitignore
+.vscode
+.idea
+
+.env
+
+dev.log
+server.log
+*.log
+
+dockerfile
+docker-compose.yml
+.dockerignore
+
+
+# Build output
+build
+dist
+
+.DS_Store
+*.pem
+
+uploads/
