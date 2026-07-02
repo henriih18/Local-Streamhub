@@ -6,7 +6,7 @@ import { encryptOrderCredentials } from "@/lib/order-helper";
 import { calculateExpirationDate } from "@/lib/date-utils";
 import { requireAdmin } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limiter";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { logger } from "@/lib/logger";
 
 export const PUT = requireAdmin(
@@ -39,9 +39,9 @@ export const PUT = requireAdmin(
       }
       const orderId = params.id;
 
-      const uuidCheck = requireUUID(params.id);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.id);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       // Obtener el pedido original con todos los datos necesarios

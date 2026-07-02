@@ -95,8 +95,12 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
 
     const specialOfferSchema = z
       .object({
-        userIds: z.array(z.string().uuid("ID de usuario inválido")),
-        streamingAccountId: z.string().uuid("ID de cuenta inválido"),
+        userIds: z.array(
+          z.string().regex(/^c[a-z0-9]{24}$/i, "ID de usuario inválido"),
+        ),
+        streamingAccountId: z
+          .string()
+          .regex(/^c[a-z0-9]{24}$/i, "ID de cuenta inválido"),
         discountPercentage: z.coerce
           .number()
           .min(0, "Mínimo 0%")

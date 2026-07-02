@@ -295,28 +295,6 @@ export default function RegisterPage() {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
 
-    /* if (field === "email" && typeof value === "string") {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailRegex.test(value)) {
-        checkAvailability("email", value);
-      } else {
-        setAvailability((prev) => ({
-          ...prev,
-          email: { available: false, message: "", checking: false },
-        }));
-      }
-    } else if (field === "username" && typeof value === "string") {
-      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-      if (usernameRegex.test(value)) {
-        checkAvailability("username", value);
-      } else {
-        setAvailability((prev) => ({
-          ...prev,
-          username: { available: false, message: "", checking: false },
-        }));
-      }
-    } */
-
     // Resetear verificación Telegram si cambia el teléfono
     if (field === "phone") {
       if (telegramPollRef.current) {

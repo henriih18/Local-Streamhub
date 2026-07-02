@@ -32,7 +32,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     }
 
     const creditRechargeSchema = z.object({
-      userId: z.string().min(1, "El ID de usuario es requerido"),
+      userId: z.string().regex(/^c[a-z0-9]{24}$/i, "ID de usuario inválido"),
       amount: z.coerce
         .number()
         .positive("El monto debe ser positivo")

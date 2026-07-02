@@ -86,7 +86,7 @@ export default function MessagesPage() {
         setMessages(messages);
       } else {
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar los mensajes");
     } finally {
       setLoading(false);
@@ -199,7 +199,7 @@ export default function MessagesPage() {
 
         toast.error(`Error ${response.status}: ${errorMessage}`);
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión al marcar como leído");
     }
   };
@@ -224,7 +224,7 @@ export default function MessagesPage() {
       toast.success("Todos los mensajes marcados como leídos");
 
       window.dispatchEvent(new CustomEvent("messagesUpdated"));
-    } catch (error) {
+    } catch {
       toast.error("Error al marcar todos los mensajes como leídos");
     }
   };
@@ -242,7 +242,7 @@ export default function MessagesPage() {
       toast.success("Mensaje eliminado");
 
       window.dispatchEvent(new CustomEvent("messagesUpdated"));
-    } catch (error) {
+    } catch {
       toast.error("Error al eliminar mensaje");
     }
   };
@@ -489,22 +489,19 @@ export default function MessagesPage() {
       <Navigation
         user={user}
         cartItemsCount={(cartItems || []).length}
-        /* onCartOpen={() => setIsCartOpen(true)} */
+        
 
         onCartOpen={() => {}}
         onLogin={() => {}}
-        /* onLogout={() => {
-          setUser(null);
-          localStorage.removeItem("user");
-        }} */
+        
         onLogout={async () => {
           try {
             await fetch("/api/auth/logout", {
               method: "POST",
               credentials: "include",
             });
-          } catch (error) {
-            //logger.error({ err: error }, "Error al cerrar sesión");
+          } catch {
+            
           }
           setUser(null);
           setMessages([]);

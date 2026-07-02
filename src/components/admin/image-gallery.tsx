@@ -203,7 +203,7 @@ export default function ImageGallery({
           toast.error("Error al eliminar la imagen del servidor");
         }
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al eliminar la imagen");
     }
   };

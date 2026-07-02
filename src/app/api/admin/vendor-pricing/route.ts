@@ -57,7 +57,7 @@ export const PUT = requireAdmin(async (request: NextRequest, user) => {
 
     const vendorPricingSchema = z.object({
       pricing: z.record(
-        z.string().uuid("ID de cuenta inválido"),
+        z.string().regex(/^c[a-z0-9]{24}$/i, "ID de cuenta inválido"),
         z.object({
           vendorPrice: z
             .number()

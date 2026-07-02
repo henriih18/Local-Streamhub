@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 
@@ -30,9 +30,9 @@ export async function PUT(
     });
     const validation = updateCartSchema.safeParse(body);
 
-    const uuidCheck = requireUUID(resolvedParams.id);
-    if (!uuidCheck.valid) {
-      return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+    const idCheck = requireId(resolvedParams.id);
+    if (!idCheck.valid) {
+      return NextResponse.json({ error: idCheck.error }, { status: 400 });
     }
 
     // Validar que quantity sea un entero positivo
@@ -143,9 +143,9 @@ export async function DELETE(
       include: { cart: { select: { userId: true } } },
     });
 
-    const uuidCheck = requireUUID(resolvedParams.id);
-    if (!uuidCheck.valid) {
-      return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+    const idCheck = requireId(resolvedParams.id);
+    if (!idCheck.valid) {
+      return NextResponse.json({ error: idCheck.error }, { status: 400 });
     }
 
     if (!cartItem) {

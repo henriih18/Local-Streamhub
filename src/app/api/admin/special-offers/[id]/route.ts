@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { userCache } from "@/lib/cache";
 import { requireAdmin } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limiter";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { logger } from "@/lib/logger";
 
 export const DELETE = requireAdmin(
@@ -37,9 +37,9 @@ export const DELETE = requireAdmin(
 
       const id = params.id;
 
-      const uuidCheck = requireUUID(params.id);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.id);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       // Verificar que exista la oferta especial

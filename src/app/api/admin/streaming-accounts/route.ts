@@ -155,6 +155,13 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     const sanitizedDuration = sanitizeInput(duration);
     const sanitizedQuality = sanitizeInput(quality);
 
+    const maxOrderResult = await db.streamingAccount.findFirst({
+      orderBy: { order: "desc" },
+      select: { order: true },
+    });
+
+    const nextOrder = (maxOrderResult?.order ?? -1) + 1;
+
     const streamingAccount = await db.streamingAccount.create({
       data: {
         name: sanitizedName,
@@ -165,6 +172,8 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
         quality: sanitizedQuality,
         screens,
         saleType: saleType || "FULL",
+        order: nextOrder,
+        isActive: false,
         //maxProfiles,
         //pricePerProfile,
       },

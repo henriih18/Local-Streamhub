@@ -139,9 +139,9 @@ interface StreamingType {
 interface StreamingAccount {
   id: string;
   name: string;
+  description: string;
   type: string;
   price: number;
-
   duration: string;
   quality: string;
   screens: number;
@@ -336,7 +336,6 @@ interface AdvancedStats {
 }
 
 export default function AdminPage() {
-  // estadísticas en tiempo real
   const {
     stats: realTimeStats,
     isConnected,
@@ -616,7 +615,7 @@ export default function AdminPage() {
       }
 
       toast.success("Inventario actualizado");
-    } catch (error) {
+    } catch {
       toast.error("No se pudo actualizar el inventario");
     }
   };
@@ -627,10 +626,10 @@ export default function AdminPage() {
       if (!checkAuth()) return;
 
       // Simplemente recargar las estadísticas del backend
-      await fetchStatsData(true); // 👈 Forzar refresh
+      await fetchStatsData(true);
 
       toast.success("Las métricas de negocio se han actualizado correctamente");
-    } catch (error) {
+    } catch {
       toast.error("No se pudieron actualizar las métricas");
     }
   };
@@ -682,7 +681,7 @@ export default function AdminPage() {
         const error = await response.json();
         toast.error(error.error || "Error al configurar el banner");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al configurar el banner");
     } finally {
       setLoadingBanner(false);
@@ -1000,7 +999,7 @@ export default function AdminPage() {
       const res = await adminFetch(endpoint);
       const data = await res.json();
       setInventoryStocks(data);
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar cuentas");
     } finally {
       setInventoryLoading(false);
@@ -1058,7 +1057,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al actualizar precios de vendedor");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión");
     } finally {
       setLoadingVendorPricing(false);
@@ -1103,7 +1102,7 @@ export default function AdminPage() {
         const errorData = await response.json();
         toast.error(errorData.error || "Error al agregar contacto");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión");
     }
   };
@@ -1123,7 +1122,7 @@ export default function AdminPage() {
         const errorData = await response.json();
         toast.error(errorData.error || "Error al eliminar contacto");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión");
     }
   };
@@ -1143,7 +1142,7 @@ export default function AdminPage() {
         const errorData = await response.json();
         toast.error(errorData.error || "Error al actualizar contacto");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión");
     }
   };
@@ -1232,7 +1231,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al cargar usuarios");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar usuarios");
     }
   };
@@ -1245,8 +1244,8 @@ export default function AdminPage() {
       const data = await res.json();
       setTopBuyers(data.topBuyers || []);
       setTopVendors(data.topVendors || []);
-    } catch (error) {
-      console.error("Error fetching top users:", error);
+    } catch {
+      toast.error("Error al buscar los mejores usuarios");
     }
   };
 
@@ -1257,7 +1256,7 @@ export default function AdminPage() {
       const res = await adminFetch("/api/admin/streaming-types");
       const data = await res.json();
       setStreamingTypes(data);
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar tipos de streaming");
     }
   };
@@ -1269,7 +1268,7 @@ export default function AdminPage() {
       const res = await adminFetch("/api/admin/streaming-accounts");
       const data = await res.json();
       setAccounts(data);
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar cuentas");
     }
   };
@@ -1297,7 +1296,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al cargar pedidos");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar pedidos");
     }
   };
@@ -1309,7 +1308,7 @@ export default function AdminPage() {
       const res = await adminFetch("/api/admin/special-offers");
       const data = await res.json();
       setSpecialOffers(data);
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar ofertas");
     }
   };
@@ -1321,7 +1320,7 @@ export default function AdminPage() {
       const res = await adminFetch("/api/admin/exclusive-accounts");
       const data = await res.json();
       setExclusiveAccounts(data);
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar cuentas exclusivas");
     }
   };
@@ -1331,7 +1330,7 @@ export default function AdminPage() {
       const res = await adminFetch("/api/admin/support-contacts");
       const data = await res.json();
       setSupportContacts(data || []);
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar contactos de soporte");
     }
   };
@@ -1347,7 +1346,7 @@ export default function AdminPage() {
       const res = await adminFetch(url);
       const data = await res.json();
       setStats(data);
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar estadísticas");
     }
   };
@@ -1394,7 +1393,7 @@ export default function AdminPage() {
         const error = await response.json();
         toast.error(error.error || "Error al subir imagen");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al subir imagen");
     } finally {
       setUploadingImage(false);
@@ -1434,7 +1433,7 @@ export default function AdminPage() {
         const error = await response.json();
         toast.error(error.error || "Error creando tipo de streaming");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error creando tipo de streaming");
     }
   };
@@ -1464,7 +1463,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al crear cuenta");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al crear cuenta");
     }
   };
@@ -1499,7 +1498,7 @@ export default function AdminPage() {
         const errorData = await response.json().catch(() => ({}));
         toast.error(errorData.error || "Error al agregar stock");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al agregar stock");
     }
   };
@@ -1550,7 +1549,7 @@ export default function AdminPage() {
         const error = await response.json();
         toast.error(error.message || "Error al agregar stock exclusivo");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al agregar stock exclusivo");
     }
   };
@@ -1607,7 +1606,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al crear oferta especial");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al crear oferta especial");
     }
   };
@@ -1628,7 +1627,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al eliminar oferta");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión");
     }
   };
@@ -1723,7 +1722,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al crear cuenta exclusiva");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al crear cuenta exclusiva");
     }
   };
@@ -1752,7 +1751,7 @@ export default function AdminPage() {
         const errorData = await response.json();
         toast.error(errorData.error || "Error al eliminar cuenta exclusiva");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al eliminar cuenta exclusiva");
     }
   };
@@ -1778,7 +1777,7 @@ export default function AdminPage() {
       setSelectedUser(user);
       setShowUserOrders(true);
       setExpandedOrders(new Set());
-    } catch (error) {
+    } catch {
       toast.error("Error al obtener pedidos del usuario");
       setUserOrders([]);
     }
@@ -1800,7 +1799,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al recargar créditos");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al recargar créditos");
     } finally {
       setIsRecharging(false);
@@ -1831,7 +1830,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al cargar el historial de recargas");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión al cargar el historial");
     } finally {
       setLoadingRechargeHistory(false);
@@ -1895,7 +1894,7 @@ export default function AdminPage() {
       } else {
         toast.error(data.error || "Error al renovar la cuenta");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al renovar la cuenta");
     }
   };
@@ -1928,7 +1927,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al actualizar cuenta");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al actualizar cuenta");
     }
   };
@@ -1966,7 +1965,7 @@ export default function AdminPage() {
           toast.error(errorData.error || "Error al eliminar cuenta");
         }
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión al eliminar cuenta");
     }
   };
@@ -2000,7 +1999,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al cambiar estado de la cuenta");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al cambiar estado de la cuenta");
     }
   };
@@ -2039,7 +2038,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al actualizar credenciales");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al actualizar credenciales");
     }
   };
@@ -2082,7 +2081,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al rehabilitar");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al rehabilitar");
     }
   };
@@ -2115,7 +2114,7 @@ export default function AdminPage() {
       } else {
         toast.error("Error al actualizar tipo");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al actualizar tipo");
     }
   };
@@ -2153,7 +2152,7 @@ export default function AdminPage() {
           toast.error(errorData.error || "Error al eliminar tipo");
         }
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión al eliminar tipo");
     }
   };
@@ -2206,7 +2205,7 @@ export default function AdminPage() {
           toast.error(errorData.error || "Error al enviar mensaje");
         }
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión al enviar mensaje");
     }
   };
@@ -2337,7 +2336,7 @@ export default function AdminPage() {
           }
         }
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión");
     } finally {
       setLoadingUserRegistration((prev) => {
@@ -2557,7 +2556,7 @@ export default function AdminPage() {
         const errorData = await response.json();
         toast.error(errorData.error || "Error al reordenar");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al reordenar");
     }
   };
@@ -3299,7 +3298,7 @@ export default function AdminPage() {
                                   {stock.type && ` · ${stock.type}`}
                                 </p>
                               </div>
-                              <div>
+                              {/* <div>
                                 {stock.isAvailable ? (
                                   <Badge className="bg-green-600">
                                     Disponible
@@ -3307,7 +3306,7 @@ export default function AdminPage() {
                                 ) : (
                                   <Badge className="bg-red-600">Vendida</Badge>
                                 )}
-                              </div>
+                              </div> */}
                             </div>
                           ))}
                         </div>
@@ -7850,6 +7849,25 @@ export default function AdminPage() {
                       setEditingAccount({
                         ...editingAccount,
                         name: e.target.value,
+                      })
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="editAccountDescription"
+                    className="text-slate-300"
+                  >
+                    Descripción
+                  </Label>
+                  <Input
+                    id="editAccountDescription"
+                    value={editingAccount.description || ""}
+                    onChange={(e) =>
+                      setEditingAccount({
+                        ...editingAccount,
+                        description: e.target.value,
                       })
                     }
                     className="bg-slate-700 border-slate-600 text-white"

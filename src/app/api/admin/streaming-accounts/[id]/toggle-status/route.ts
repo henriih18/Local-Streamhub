@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { userCache } from "@/lib/cache";
 import { requireAdmin } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { requireId } from "@/lib/validate-id";
 
 export const PUT = requireAdmin(
   async (
@@ -12,6 +13,11 @@ export const PUT = requireAdmin(
   ) => {
     try {
       const accountId = params.id;
+
+      const idCheck = requireId(accountId);
+       if (!idCheck.valid) {
+         return NextResponse.json({ error: idCheck.error }, { status: 400 });
+       }
 
       // Verificar si la cuenta existe
       const account = await db.streamingAccount.findUnique({

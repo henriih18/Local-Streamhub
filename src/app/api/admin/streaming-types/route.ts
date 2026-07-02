@@ -4,7 +4,6 @@ import { userCache } from "@/lib/cache";
 import { requireAdmin } from "@/lib/auth";
 import {
   sanitizeInput,
-  sanitizeIcon,
   sanitizeCssValue,
   sanitizeUrl,
 } from "@/lib/sanitize";

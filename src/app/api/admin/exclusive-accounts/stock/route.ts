@@ -6,6 +6,7 @@ import { encryptInventoryCredentials } from "@/lib/order-helper";
 import { sanitizeInput } from "@/lib/sanitize";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { requireId } from "@/lib/validate-id";
 
 export const POST = requireAdmin(async (request: NextRequest, user) => {
   try {
@@ -127,6 +128,11 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
         { error: "Se requiere el ID de la cuenta exclusiva" },
         { status: 400 },
       );
+    }
+
+    const idCheck = requireId(exclusiveAccountId);
+    if (!idCheck.valid) {
+      return NextResponse.json({ error: idCheck.error }, { status: 400 });
     }
 
     const stocks = await db.exclusiveStock.findMany({

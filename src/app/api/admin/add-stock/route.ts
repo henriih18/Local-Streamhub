@@ -33,7 +33,9 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     }
 
     const addStockSchema = z.object({
-      streamingAccountId: z.string().uuid("ID de cuenta inválido"),
+      streamingAccountId: z
+        .string()
+        .regex(/^c[a-z0-9]{24}$/i, "ID de cuenta inválido"),
       saleType: z.enum(["FULL", "PROFILES"]).optional(),
       accounts: z
         .string()

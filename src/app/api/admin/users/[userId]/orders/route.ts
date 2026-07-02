@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { decryptInventoryCredentials } from "@/lib/order-helper";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { logger } from "@/lib/logger";
 
 export const GET = requireAdmin(
@@ -15,9 +15,9 @@ export const GET = requireAdmin(
       const resolvedParams = await params;
       const userId = resolvedParams.userId;
 
-      const uuidCheck = requireUUID(resolvedParams.userId);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(resolvedParams.userId);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       if (!userId) {

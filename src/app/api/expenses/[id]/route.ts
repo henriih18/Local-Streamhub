@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { sanitizeInput } from "@/lib/sanitize";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 
@@ -15,9 +15,9 @@ export const PUT = requireAdmin(
     try {
       const id = params.id;
 
-      const uuidCheck = requireUUID(params.id);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.id);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       const updateExpenseSchema = z.object({
@@ -100,9 +100,9 @@ export const DELETE = requireAdmin(
     try {
       const id = params.id;
 
-      const uuidCheck = requireUUID(params.id);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.id);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       // Eliminación temporal estableciendo isActive como falso

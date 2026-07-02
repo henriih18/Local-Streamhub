@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { userCache } from "@/lib/cache";
 import { requireAdmin } from "@/lib/auth";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limiter";
@@ -36,9 +36,9 @@ export const PUT = requireAdmin(
 
       const id = params.id;
 
-      const uuidCheck = requireUUID(params.id);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.id);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       const updateExclusiveAccountSchema = z.object({
@@ -53,7 +53,7 @@ export const PUT = requireAdmin(
         expiresAt: z.union([z.string(), z.date()]).optional().nullable(),
         isActive: z.boolean().optional(),
         allowedUsers: z
-          .array(z.string().uuid("ID de usuario inválido"))
+          .array(z.string().regex(/^c[a-z0-9]{24}$/i, "ID de usuario inválido"))
           .optional(),
       });
 
@@ -169,9 +169,9 @@ export const DELETE = requireAdmin(
 
       const id = params.id;
 
-      const uuidCheck = requireUUID(params.id);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.id);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       // Comprobar si la cuenta tiene pedidos activos

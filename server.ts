@@ -7,7 +7,7 @@ import { logger } from "./src/lib/logger";
 
 const dev = process.env.NODE_ENV !== "production";
 const currentPort = 3000;
-//const hostname = "127.0.0.1";
+
 const hostname =
   process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
 
@@ -36,7 +36,7 @@ async function createCustomServer() {
         return;
       }
 
-      // ← NUEVO: Log automático al finalizar cada petición HTTP
+      // Log automático al finalizar cada petición HTTP
       res.on("finish", () => {
         const start = (req as any)._start || Date.now();
         const duration = Date.now() - start;
@@ -62,7 +62,7 @@ async function createCustomServer() {
         );
       });
 
-      // ← NUEVO: Guardar timestamp de inicio para calcular duración
+      //  Guardar timestamp de inicio para calcular duración
       (req as any)._start = Date.now();
 
       handle(req, res);
@@ -91,7 +91,7 @@ async function createCustomServer() {
       }),
     });
 
-    // ← NUEVO: Logging básico de conexiones Socket.IO
+    // Logging básico de conexiones Socket.IO
     io.on("connection", (socket) => {
       logger.info({ socketId: socket.id }, "Socket connected");
       socket.on("disconnect", () => {

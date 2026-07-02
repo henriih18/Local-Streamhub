@@ -119,7 +119,7 @@ function LoginFormContent() {
         }
         setIsLoading(false);
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión. Intenta nuevamente.");
       setIsLoading(false);
     }

@@ -1,17 +1,17 @@
-const CUID_REGEX = /^c[a-z0-9]{20,}$/;
+const CUID_REGEX = /^c[a-z0-9]{24}$/i;
 
-export function validateUUID(id: string): boolean {
+export function validateId(id: string): boolean {
   return CUID_REGEX.test(id);
 }
 
-export function requireUUID(id: string): {
+export function requireId(id: string): {
   valid: boolean;
   error: string | null;
 } {
   if (!id || typeof id !== "string") {
     return { valid: false, error: "ID es requerido" };
   }
-  if (!validateUUID(id)) {
+  if (!validateId(id)) {
     return { valid: false, error: "ID inválido" };
   }
   return { valid: true, error: null };

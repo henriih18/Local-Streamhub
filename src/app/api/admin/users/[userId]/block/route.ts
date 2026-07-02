@@ -5,7 +5,7 @@ import { getIO } from "@/lib/socket";
 import { requireAdmin } from "@/lib/auth";
 import { sanitizeInput } from "@/lib/sanitize";
 import { rateLimit } from "@/lib/rate-limiter";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { z } from "zod";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { logger } from "@/lib/logger";
@@ -41,9 +41,9 @@ export const POST = requireAdmin(
 
       const userId = params.userId;
 
-      const uuidCheck = requireUUID(params.userId);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.userId);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       const blockSchema = z.object({

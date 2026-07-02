@@ -5,10 +5,19 @@ import { userCache } from "@/lib/cache";
 
 export const GET = requireAdmin(async (request: NextRequest, user) => {
   try {
+    const { searchParams } = new URL(request.url);
+    const forceRefresh = searchParams.get("refresh") === "true";
+
     const cacheKey = "admin:stats:complete";
+
+    // Si se solicita refresh forzado, eliminar el caché
+    if (forceRefresh) {
+      userCache.delete(cacheKey);
+    }
+
     let cachedStats = userCache.get(cacheKey) as any;
 
-    if (cachedStats) {
+    if (cachedStats && !forceRefresh) {
       return NextResponse.json(cachedStats);
     }
 

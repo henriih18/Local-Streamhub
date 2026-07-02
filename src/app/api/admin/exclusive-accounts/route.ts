@@ -70,7 +70,7 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
 
     return NextResponse.json(accounts);
   } catch (error) {
-    logger.error({err: error},"Error al obtener cuentas exclusivas");
+    logger.error({ err: error }, "Error al obtener cuentas exclusivas");
     return NextResponse.json(
       { error: "Error al cargar cuentas exclusivas" },
       { status: 500 },
@@ -131,7 +131,10 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       /* maxProfiles: z.coerce.number().int().min(1).optional().nullable(),
       pricePerProfile: z.coerce.number().positive().optional().nullable(), */
       isPublic: z.boolean().default(false),
-      allowedUsers: z.array(z.string().min(1)).optional().default([]),
+      allowedUsers: z
+        .array(z.string().regex(/^c[a-z0-9]{24}$/i, "ID de usuario inválido"))
+        .optional()
+        .default([]),
       maxSlots: z.coerce.number().int().min(1).optional().default(1),
       expiresAt: z
         .string()
@@ -224,7 +227,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
 
     return NextResponse.json(transformedAccount);
   } catch (error) {
-    logger.error({err: error},"Error al crear cuenta exclusiva");
+    logger.error({ err: error }, "Error al crear cuenta exclusiva");
     return NextResponse.json(
       { error: "Error al crear cuenta exclusiva" },
       { status: 500 },

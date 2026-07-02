@@ -15,7 +15,7 @@ export const GET = optionalAuth(async (request: NextRequest, user) => {
 
     // Nuevos parámetros de paginación
     const page = parseSafeInt(searchParams.get("page"), 1, 1, 10000);
-    const limit = parseSafeInt(searchParams.get("limit"), 9, 1, 100);
+    const limit = parseSafeInt(searchParams.get("limit"), 12, 1, 100);
     const search = parseSafeSearch(searchParams.get("search"));
 
     let userRole = "USER";

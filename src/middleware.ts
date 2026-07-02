@@ -8,9 +8,7 @@ function getJwtSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-// =========================
 // NONCE GENERATOR
-// =========================
 function generateNonce(): string {
   const array = new Uint8Array(16);
   crypto.getRandomValues(array);
@@ -18,7 +16,6 @@ function generateNonce(): string {
 }
 
 // CSP BUILDER
-
 function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
 
@@ -64,9 +61,7 @@ function isRouteMatch(pathname: string, routes: string[]): boolean {
   );
 }
 
-// =========================
 // RUTAS
-// =========================
 const publicRoutes = [
   "/login",
   "/register",
@@ -112,10 +107,7 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
 
-  // -------------------------
   // Permitir rutas públicas y estáticas
-  // -------------------------
-
   if (
     isRouteMatch(pathname, publicRoutes) ||
     isRouteMatch(pathname, staticRoutes)
@@ -127,9 +119,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // -------------------------
   // Obtener token
-  // -------------------------
   const token =
     request.cookies.get("authToken")?.value ||
     request.headers.get("Authorization")?.replace("Bearer ", "");
@@ -147,8 +137,6 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
-    // FIX H-02: Antes no se añadían security headers aquí.
-    // Ahora TODAS las respuestas llevan headers de seguridad.
     const response = NextResponse.next({
       request: { headers: requestHeaders },
     });
@@ -156,9 +144,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // -------------------------
   // Validar JWT
-  // -------------------------
   try {
     const secret = getJwtSecret();
     // jwtVerify de jose (es async)
@@ -234,16 +220,13 @@ export async function middleware(request: NextRequest) {
   }
 }
 
-// =========================
 // Encabezados de seguridad
-// =========================
 function addSecurityHeaders(response: NextResponse, nonce: string) {
   // CSP con nonce
   response.headers.set("Content-Security-Policy", buildCsp(nonce));
 
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
-  //response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Referrer-Policy", "no-referrer");
 
   response.headers.set("X-DNS-Prefetch-Control", "off");
@@ -260,9 +243,7 @@ function addSecurityHeaders(response: NextResponse, nonce: string) {
   );
 }
 
-// =========================
 // Configuración de matcher
-// =========================
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|api/socketio).*)"],
 };

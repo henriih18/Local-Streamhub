@@ -187,7 +187,7 @@ export default function PermissionManager({
         const error = await response.json();
         toast.error(error.error || "Error al enviar advertencia");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al enviar advertencia");
     } finally {
       setWarningLoading(false);
@@ -227,7 +227,7 @@ export default function PermissionManager({
         const error = await response.json();
         toast.error(error.error || "Error al bloquear usuario");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al bloquear usuario");
     } finally {
       setBlockLoading(false);
@@ -257,7 +257,7 @@ export default function PermissionManager({
         const error = await response.json();
         toast.error(error.error || "Error al desbloquear usuario");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al desbloquear usuario");
     } finally {
       setUnblockLoading(false);

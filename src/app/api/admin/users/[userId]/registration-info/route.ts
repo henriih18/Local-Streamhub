@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { broadcastUserUpdate, getIO } from "@/lib/socket";
 import { rateLimit } from "@/lib/rate-limiter";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 export const GET = requireAdmin(
@@ -16,9 +16,9 @@ export const GET = requireAdmin(
     try {
       const userId = params.userId;
 
-      const uuidCheck = requireUUID(params.userId);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.userId);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       // Obtener información de registro de usuario
@@ -113,9 +113,9 @@ export const PUT = requireAdmin(
       }
       const userId = params.userId;
 
-      const uuidCheck = requireUUID(params.userId);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.userId);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
       const body = await request.json();
 

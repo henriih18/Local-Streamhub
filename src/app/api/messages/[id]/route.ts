@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, AuthUser } from "@/lib/auth";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 
@@ -22,12 +22,12 @@ function checkRateLimit(userId: string): boolean {
   return true;
 }
 
-// ── Helper: extraer + validar UUID del pathname ─────────────────────
+// ── Helper: extraer + validar ID del pathname ─────────────────────
 function extractMessageId(request: NextRequest): string | NextResponse {
   const raw = request.nextUrl.pathname.split("/").pop()!;
-  const uuidCheck = requireUUID(raw);
-  if (!uuidCheck.valid) {
-    return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+  const idCheck = requireId(raw);
+  if (!idCheck.valid) {
+    return NextResponse.json({ error: idCheck.error }, { status: 400 });
   }
   return raw;
 }
@@ -100,7 +100,7 @@ export const POST = requireAuth(
         { status: 429 },
       );
     }
-    // 2. UUID validation
+    // 2. ID validation
     const messageId = extractMessageId(request);
     if (messageId instanceof NextResponse) return messageId;
     // 3. Lógica
@@ -118,7 +118,7 @@ export const PATCH = requireAuth(
         { status: 429 },
       );
     }
-    // 2. UUID validation
+    // 2. ID validation
     const messageId = extractMessageId(request);
     if (messageId instanceof NextResponse) return messageId;
     // 3. Lógica
@@ -136,7 +136,7 @@ export const DELETE = requireAuth(
         { status: 429 },
       );
     }
-    // 2. UUID validation
+    // 2. ID validation
     const messageId = extractMessageId(request);
     if (messageId instanceof NextResponse) return messageId;
 

@@ -121,6 +121,7 @@ export async function POST(request: NextRequest) {
           resetPasswordToken: null,
           resetPasswordExpires: null,
           updatedAt: new Date(),
+          tokenVersion: { increment: 1 }
         },
       });
 

@@ -251,10 +251,10 @@ export const DELETE = requireAdmin(async (request: NextRequest) => {
       );
     }
 
-    const { requireUUID } = await import("@/lib/validate-uuid");
-    const uuidCheck = requireUUID(id);
-    if (!uuidCheck.valid) {
-      return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+    const { requireId } = await import("@/lib/validate-id");
+    const idCheck = requireId(id);
+    if (!idCheck.valid) {
+      return NextResponse.json({ error: idCheck.error }, { status: 400 });
     }
 
     // Verificar si el contacto existe

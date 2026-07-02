@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
-import { requireUUID } from "@/lib/validate-uuid";
+import { requireId } from "@/lib/validate-id";
 import { logger } from "@/lib/logger";
 
 export const GET = requireAdmin(
@@ -13,9 +13,9 @@ export const GET = requireAdmin(
     try {
       const userId = params.userId;
 
-      const uuidCheck = requireUUID(params.userId);
-      if (!uuidCheck.valid) {
-        return NextResponse.json({ error: uuidCheck.error }, { status: 400 });
+      const idCheck = requireId(params.userId);
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
       // Obtener el historial de recargas del usuario con información del administrador

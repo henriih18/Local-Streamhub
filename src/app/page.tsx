@@ -95,7 +95,7 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
-  const itemsPerPage = 9;
+  const itemsPerPage = 12;
   const blockHandledRef = useRef(false);
 
   // Actualizaciones de mensajes en tiempo real
@@ -771,7 +771,12 @@ export default function Home() {
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                onPageChange={setCurrentPage}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  document
+                    .getElementById("accounts")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
               />
             )}
 

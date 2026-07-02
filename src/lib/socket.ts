@@ -79,7 +79,7 @@ export const setupSocket = (io: Server) => {
         logger.warn(
           {
             userId: user.userId,
-            attemptedUserId: user.userId, // o el ID que intentó usar
+            attemptedUserId: user.userId,
             action: "register_mismatch",
             security: true,
           },
