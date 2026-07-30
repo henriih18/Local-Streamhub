@@ -162,7 +162,8 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: "🔐 *Verificación de número telefónico*\n\nPara completar tu registro en RiyoStream necesitamos verificar tu número de teléfono.\n\nHaz clic en el botón de abajo para compartir tu número:",
+          /* text: "🔐 *Verificación de número telefónico*\n\nPara completar tu registro en RiyoStream necesitamos verificar tu número de teléfono.\n\nHaz clic en el botón de abajo para compartir tu número:", */
+          text: "🔐 *Verificación de número telefónico*\n\nPara completar tu registro en RiyoStream necesitamos verificar tu número de teléfono.\n\n1️⃣ Toca el botón *📱 Compartir mi número* que aparece abajo\n2️⃣ Si no ves el botón, toca el ícono del teclado ⌨️ abajo a la derecha\n3️⃣ Confirma compartir tu contacto\n\n⚠️ *Debes usar el botón de abajo, no escribir el número a mano*",
           parse_mode: "Markdown",
           reply_markup: {
             keyboard: [

@@ -15,18 +15,22 @@ const registerSchema = z
   .object({
     fullName: z
       .string()
+      .trim()
       .min(3, "El nombre debe tener al menos 3 caracteres")
       .max(100, "El nombre no puede exceder 100 caracteres"),
     email: z
       .string()
+      .trim()
       .email("Email no válido")
       .max(255, "El email no puede exceder 255 caracteres"),
     phone: z
       .string()
+      .trim()
       .min(10, "El teléfono debe tener al menos 10 dígitos")
       .max(20, "El teléfono no puede exceder 20 caracteres"),
     username: z
       .string()
+      .trim()
       .min(3, "El usuario debe tener al menos 3 caracteres")
       .max(20, "El usuario no puede exceder 20 caracteres")
       .regex(
@@ -35,11 +39,14 @@ const registerSchema = z
       ),
     password: z
       .string()
+      .trim()
       .min(8, "La contraseña debe tener al menos 8 caracteres")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
         "La contraseña debe incluir mayúsculas, minúsculas, números y al menos un carácter especial",
       ),
+    country: z.string().optional(),
+    language: z.string().optional(),
     telegramTempToken: z.string().min(1, "Verificación de Telegram requerida"),
     acceptMarketing: z.boolean().default(false),
   })
@@ -95,6 +102,8 @@ export async function POST(request: NextRequest) {
       username,
       password,
       telegramTempToken,
+      country,
+      language,
       acceptMarketing,
     } = validation.data;
 
@@ -214,6 +223,8 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         telegramChatId: verifiedChatId,
         acceptMarketing,
+        country: country || "CO",
+        language: language || "es",
         emailVerified: true,
         isActive: true,
         role: "USER",

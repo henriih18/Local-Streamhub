@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { SignJWT } from "jose";
-import { rateLimit, getClientIdentifier } from "@/lib/rate-limiter";
+import { rateLimit, getClientIP } from "@/lib/rate-limiter";
 import { logger } from "@/lib/logger";
 
 // Schema de validación para el login
@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
     /* =======================
        RATE LIMIT (PRIMER PASO)
     ======================= */
-    const ip = getClientIdentifier(request);
+    const ip = getClientIP(request);
     const limitCheck = await rateLimit({
       identifier: ip,
-      limit: 5,
+      limit: 15,
       windowMs: 15 * 60 * 1000,
     });
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
           status: 429,
           headers: {
             "Retry-After": retryAfter.toString(),
-            "X-RateLimit-Limit": "5",
+            "X-RateLimit-Limit": "15",
             "X-RateLimit-Remaining": "0",
             "X-RateLimit-Reset": new Date(limitCheck.resetTime).toISOString(),
           },

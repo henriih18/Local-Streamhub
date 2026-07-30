@@ -29,7 +29,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     const identifier = `${user.id}-checkout`;
     const limitCheck = await rateLimit({
       identifier,
-      limit: 10,
+      limit: 4,
       windowMs: 60 * 1000,
     });
 
@@ -45,7 +45,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
             "Retry-After": Math.ceil(
               (limitCheck.resetTime - Date.now()) / 1000,
             ).toString(),
-            "X-RateLimit-Limit": "10",
+            "X-RateLimit-Limit": "4",
             "X-RateLimit-Remaining": "0",
             "X-RateLimit-Reset": new Date(limitCheck.resetTime).toISOString(),
           },

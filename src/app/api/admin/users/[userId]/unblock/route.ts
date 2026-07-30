@@ -18,7 +18,7 @@ export const POST = requireAdmin(
     try {
       const limitCheck = await rateLimit({
         identifier: `admin:${user.id}:${request.url}`,
-        limit: 30,
+        limit: 10,
         windowMs: 60 * 1000,
       });
       if (!limitCheck.success) {

@@ -39,6 +39,18 @@ export default function RegisterPage() {
     Record<string, { available: boolean; message: string; checking: boolean }>
   >({});
 
+  // ── Password Requirements ──
+  const passwordRequirements = [
+    { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
+    { label: "Al menos una mayúscula", test: (p: string) => /[A-Z]/.test(p) },
+    { label: "Al menos una minúscula", test: (p: string) => /[a-z]/.test(p) },
+    { label: "Al menos un número", test: (p: string) => /\d/.test(p) },
+    {
+      label: "Al menos un símbolo especial",
+      test: (p: string) => /[!@#$%^&*(),.?":{}|<>]/.test(p),
+    },
+  ];
+
   // ── Telegram Verification ──
   const [telegramStatus, setTelegramStatus] = useState<
     "idle" | "loading" | "waiting" | "verified" | "error"
@@ -224,8 +236,13 @@ export default function RegisterPage() {
       newErrors.password = "La contraseña es requerida";
     } else if (formData.password.length < 8) {
       newErrors.password = "La contraseña debe tener al menos 8 caracteres";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = "Debe incluir mayúsculas, minúsculas y números";
+    } else if (
+      !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/.test(
+        formData.password,
+      )
+    ) {
+      newErrors.password =
+        "Debe incluir mayúsculas, minúsculas, números y al menos un carácter especial";
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -271,8 +288,22 @@ export default function RegisterPage() {
         router.push("/login");
       } else {
         toast.error(data.error || "Error al crear la cuenta");
+
+        // Mostrar errores detallados de validación si vienen de Zod
+        if (data.details && Array.isArray(data.details)) {
+          const detailErrors: Record<string, string> = {};
+          data.details.forEach(
+            (detail: { field: string | number; message: string }) => {
+              if (detail.field) {
+                detailErrors[String(detail.field)] = detail.message;
+              }
+            },
+          );
+          setErrors((prev) => ({ ...prev, ...detailErrors }));
+        }
+
         if (data.field) {
-          setErrors({ [data.field]: data.error });
+          setErrors((prev) => ({ ...prev, [data.field]: data.error }));
 
           // Si el error es de teléfono (no coincide), resetear verificación
           if (data.field === "phone" && data.error.includes("Telegram")) {
@@ -490,9 +521,14 @@ export default function RegisterPage() {
 
               {/* Teléfono + Verificación Telegram */}
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-slate-300">
-                  Teléfono *
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="phone" className="text-slate-300">
+                    Teléfono *
+                  </Label>
+                  <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+                    Requiere verificación por Telegram
+                  </span>
+                </div>
                 <div className="flex">
                   <span className="flex items-center px-3 bg-slate-600 border border-r-0 border-slate-500 text-slate-300 text-sm rounded-l-md shrink-0">
                     +57
@@ -518,6 +554,12 @@ export default function RegisterPage() {
                 </div>
                 {errors.phone && (
                   <p className="text-red-400 text-sm">{errors.phone}</p>
+                )}
+                {telegramStatus !== "verified" && !errors.phone && (
+                  <p className="text-sky-400/80 text-xs">
+                    🔒 Debes verificar tu número por Telegram para completar el
+                    registro
+                  </p>
                 )}
 
                 {/* Botón Verificar Telegram */}
@@ -654,6 +696,30 @@ export default function RegisterPage() {
                 {errors.password && (
                   <p className="text-red-400 text-sm">{errors.password}</p>
                 )}
+                <div className="space-y-1 mt-1">
+                  {passwordRequirements.map((req) => {
+                    const met = req.test(formData.password);
+                    return (
+                      <div
+                        key={req.label}
+                        className="flex items-center gap-1.5"
+                      >
+                        {met ? (
+                          <Check className="w-3 h-3 text-green-400 shrink-0" />
+                        ) : (
+                          <div className="w-3 h-3 rounded-full border border-slate-500 shrink-0" />
+                        )}
+                        <span
+                          className={`text-xs ${
+                            met ? "text-green-400" : "text-slate-500"
+                          }`}
+                        >
+                          {req.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Confirmar Contraseña */}
@@ -715,6 +781,13 @@ export default function RegisterPage() {
                   </>
                 )}
               </Button>
+
+              {telegramStatus !== "verified" && (
+                <p className="text-center text-xs text-slate-500">
+                  El botón está deshabilitado hasta que verifiques tu teléfono
+                  por Telegram
+                </p>
+              )}
 
               {/* Link para Login */}
               <div className="text-center">

@@ -50,7 +50,7 @@ function incrementInMemory(
 export async function rateLimit({
   identifier,
   limit = 10,
-  windowMs = 60_000, // 1 minuto por defecto
+  windowMs = 60_000,
 }: {
   identifier: string;
   limit?: number;
@@ -66,7 +66,6 @@ export async function rateLimit({
         count: record.count,
         action: "rate_limit_exceeded",
         security: true,
-        
       },
       "[Rate Limit] Excedido",
     );
@@ -96,6 +95,16 @@ export function getClientIdentifier(request: NextRequest): string {
     .update(`${ip}:${userAgent}`)
     .digest("hex");
   return hashed;
+}
+
+// IP pura sin User-Agent (para rate limits de seguridad: login, registro, etc.)
+export function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip =
+    forwarded?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  return ip;
 }
 
 function getRealIP(forwarded: string | null): string {
