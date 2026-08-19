@@ -524,9 +524,9 @@ export default function AccountPage() {
                             </Badge>
                           </div>
                         </div>
-                        <p className="text-emerald-400 font-medium mb-2">
+                        {/* <p className="text-emerald-400 font-medium mb-2">
                           {contact.number}
-                        </p>
+                        </p> */}
                         {contact.description && (
                           <p className="text-slate-400 text-sm mb-3">
                             {contact.description}

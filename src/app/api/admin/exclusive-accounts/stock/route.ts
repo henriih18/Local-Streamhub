@@ -7,6 +7,7 @@ import { sanitizeInput } from "@/lib/sanitize";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { requireId } from "@/lib/validate-id";
+import { sendStockNotificationToSupportGroup } from "@/lib/telegram_noti_stock";
 
 export const POST = requireAdmin(async (request: NextRequest, user) => {
   try {
@@ -107,6 +108,16 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
         newStock: updatedStocks.length,
       });
     }
+
+    await sendStockNotificationToSupportGroup({
+      accountName: exclusiveAccount.name,
+      accountType: exclusiveAccount.type,
+      saleType: (exclusiveAccount.saleType as "FULL" | "PROFILES") || "FULL",
+      //quantity: 1, // acá se agrega de a uno
+      isExclusive: true,
+      duration: exclusiveAccount.duration,
+      quality: exclusiveAccount.quality || undefined,
+    });
 
     return NextResponse.json(stock);
   } catch (error) {

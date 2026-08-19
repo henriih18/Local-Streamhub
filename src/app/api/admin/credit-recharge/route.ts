@@ -95,7 +95,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
 
     return NextResponse.json({ user: targetUser, creditRecharge });
   } catch (error) {
-    logger.error({err: error},"Error recharging credits");
+    logger.error({ err: error }, "Error recharging credits");
     return NextResponse.json(
       { error: "Error al recargar creditos" },
       { status: 500 },

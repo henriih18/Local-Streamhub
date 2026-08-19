@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { userCache } from "@/lib/cache";
 import { requireAdmin } from "@/lib/auth";
-import {
-  sanitizeInput,
-  sanitizeCssValue,
-  sanitizeUrl,
-} from "@/lib/sanitize";
+import { sanitizeInput, sanitizeCssValue, sanitizeUrl } from "@/lib/sanitize";
 import { rateLimit } from "@/lib/rate-limiter";
 import { z } from "zod";
 import { logger } from "@/lib/logger";

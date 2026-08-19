@@ -15,6 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast-custom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { FloatingStreamingIcons } from "@/components/floating-streaming-icons";
 
 function LoginFormContent() {
   const router = useRouter();
@@ -136,8 +137,9 @@ function LoginFormContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 relative">
+      <FloatingStreamingIcons />
+      <div className="w-full max-w-md relative z-10">
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-white">
@@ -255,8 +257,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
-          <div className="w-full max-w-md">
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 relative">
+          <FloatingStreamingIcons />
+          <div className="w-full max-w-md relative z-10">
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl font-bold text-white">

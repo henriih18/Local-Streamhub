@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getClientIdentifier, rateLimit } from "@/lib/rate-limiter";
+import { getClientIP, rateLimit } from "@/lib/rate-limiter";
 import { sendTelegramMessage, generateTempToken } from "@/lib/telegram";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
@@ -22,7 +22,7 @@ function escapeMarkdown(text: string): string {
 export async function POST(request: NextRequest) {
   try {
     // Rate limit: 5 intentos por IP cada 15 minutos
-    const identifier = getClientIdentifier(request);
+    const identifier = getClientIP(request);
     const limitCheck = await rateLimit({
       identifier,
       limit: 5,

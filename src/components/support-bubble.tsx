@@ -71,7 +71,10 @@ export function SupportBubble() {
       const cleanNumber = contact.number.replace(/[^\d+]/g, "");
       url = `https://wa.me/${cleanNumber}`;
     } else if (contact.type === "telegram") {
-      url = `https://t.me/${contact.number.replace("@", "")}`;
+      const username = contact.number.replace(/^@+/, "");
+      // Validación defensiva
+      if (!/^[a-zA-Z][a-zA-Z0-9_]{4,31}$/.test(username)) return;
+      url = `https://t.me/${username}`;
     } else {
       url = `tel:${contact.number}`;
     }
@@ -150,9 +153,9 @@ export function SupportBubble() {
                               : "SMS"}
                       </Badge>
                     </div>
-                    <p className="text-emerald-400 font-medium text-sm mb-1">
+                    {/* <p className="text-emerald-400 font-medium text-sm mb-1">
                       {contact.number}
-                    </p>
+                    </p> */}
                     {contact.description && (
                       <p className="text-slate-400 text-xs truncate">
                         {contact.description}

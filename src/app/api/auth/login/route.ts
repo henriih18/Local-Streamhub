@@ -8,8 +8,8 @@ import { logger } from "@/lib/logger";
 
 // Schema de validación para el login
 const loginSchema = z.object({
-  email: z.string().email("Email no válido"),
-  password: z.string().min(1, "La contraseña es requerida"),
+  email: z.string().trim().toLowerCase().email("Email no válido"),
+  password: z.string().trim().min(1, "La contraseña es requerida"),
 });
 
 function getJwtSecret(): Uint8Array {

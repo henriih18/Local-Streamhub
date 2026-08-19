@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { logger } from "@/lib/logger";
+import { timingSafeEqual } from "crypto";
 
-// Verificar que el webhook viene de Telegram
 function verifyWebhookSecret(req: NextRequest): boolean {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!secret) {
@@ -15,7 +15,16 @@ function verifyWebhookSecret(req: NextRequest): boolean {
   }
 
   const telegramSecret = req.headers.get("X-Telegram-Bot-Api-Secret-Token");
-  return telegramSecret === secret;
+
+  if (!telegramSecret) return false;
+
+  // timingSafeEqual requiere buffers del mismo largo
+  const a = Buffer.from(secret);
+  const b = Buffer.from(telegramSecret);
+
+  if (a.length !== b.length) return false;
+
+  return timingSafeEqual(a, b);
 }
 
 export async function POST(req: NextRequest) {

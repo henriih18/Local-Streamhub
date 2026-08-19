@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "RiyoStream",
     description: "Tu plataforma de confianza para cuentas de streaming premium",
-    url: "https://riyostream.com",
+    url: "https://www.riyostream.com",
     siteName: "RiyoStream",
     type: "website",
   },

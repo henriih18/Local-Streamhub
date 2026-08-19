@@ -7,6 +7,7 @@ import { encryptInventoryCredentials } from "@/lib/order-helper";
 import { rateLimit } from "@/lib/rate-limiter";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { sendStockNotificationToSupportGroup } from "@/lib/telegram_noti_stock";
 
 export const POST = requireAdmin(async (request: NextRequest, user) => {
   try {
@@ -202,6 +203,16 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
         newStocks: newStocksForFrontend,
       });
     }
+
+    await sendStockNotificationToSupportGroup({
+      accountName: streamingAccount.name,
+      accountType: streamingAccount.type,
+      saleType: actualSaleType as "FULL" | "PROFILES",
+      //quantity: results.length,
+      isExclusive: false,
+      duration: streamingAccount.duration,
+      quality: streamingAccount.quality,
+    });
 
     return NextResponse.json({
       success: true,

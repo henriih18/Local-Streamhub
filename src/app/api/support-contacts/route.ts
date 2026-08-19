@@ -2,18 +2,48 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
-import { sanitizeInput, sanitizePhone } from "@/lib/sanitize";
+import {
+  sanitizeInput,
+  sanitizePhone,
+  sanitizeTelegramUsername,
+} from "@/lib/sanitize";
 import { logger } from "@/lib/logger";
 
 // Schema para validación
-const supportContactSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido"),
-  number: z.string().min(1, "El número es requerido"),
-  type: z.enum(["whatsapp", "phone", "telegram", "sms"]),
-  description: z.string().optional().nullable(),
-  isActive: z.boolean().default(true),
-  order: z.number().default(0),
-});
+const supportContactSchema = z
+  .object({
+    name: z.string().min(1, "El nombre es requerido"),
+    number: z.string().min(1, "El número es requerido"),
+    type: z.enum(["whatsapp", "phone", "telegram", "sms"]),
+    description: z.string().optional().nullable(),
+    isActive: z.boolean().default(true),
+    order: z.number().default(0),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "telegram") {
+      // Limpiar @ para validar
+      const username = data.number.trim().replace(/^@+/, "");
+      // 5-32 chars, empieza con letra, solo [a-zA-Z0-9_]
+      if (!/^[a-zA-Z][a-zA-Z0-9_]{4,31}$/.test(username)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Ingresa un username de Telegram válido (5-32 caracteres, empieza con letra, solo letras, números y _). Ej: @MiBotSoporte",
+          path: ["number"],
+        });
+      }
+    } else {
+      // Para whatsapp/phone/sms: al menos 7 dígitos
+      const digits = data.number.replace(/\D/g, "");
+      if (digits.length < 7) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Ingresa un número de teléfono válido (mínimo 7 dígitos)",
+          path: ["number"],
+        });
+      }
+    }
+  });
 
 export async function GET(request: NextRequest) {
   try {
@@ -110,7 +140,10 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     const { name, number, type, description, isActive, order } =
       validation.data;
 
-    const sanitizedNumber = sanitizePhone(number);
+    const sanitizedNumber =
+      type === "telegram"
+        ? sanitizeTelegramUsername(number)
+        : sanitizePhone(number);
     const sanitizedName = sanitizeInput(name);
     const sanitizedDescription = description
       ? sanitizeInput(description)
@@ -186,7 +219,7 @@ export const PUT = requireAdmin(async (request: NextRequest, user) => {
       );
     }
 
-    const sanitizedData = {
+    /* const sanitizedData = {
       ...validation.data,
       name: validation.data.name
         ? sanitizeInput(validation.data.name)
@@ -194,7 +227,24 @@ export const PUT = requireAdmin(async (request: NextRequest, user) => {
       description: validation.data.description
         ? sanitizeInput(validation.data.description)
         : undefined,
+      
+    }; */
+    const sanitizedData: any = {
+      ...validation.data,
     };
+
+    if (validation.data.name) {
+      sanitizedData.name = sanitizeInput(validation.data.name);
+    }
+    if (validation.data.description) {
+      sanitizedData.description = sanitizeInput(validation.data.description);
+    }
+    if (validation.data.number) {
+      sanitizedData.number =
+        validation.data.type === "telegram"
+          ? sanitizeTelegramUsername(validation.data.number)
+          : sanitizePhone(validation.data.number);
+    }
 
     // Verificar si el contacto existe
     const existingContact = await db.supportContact.findUnique({

@@ -15,9 +15,9 @@ export const PUT = requireAdmin(
       const accountId = params.id;
 
       const idCheck = requireId(accountId);
-       if (!idCheck.valid) {
-         return NextResponse.json({ error: idCheck.error }, { status: 400 });
-       }
+      if (!idCheck.valid) {
+        return NextResponse.json({ error: idCheck.error }, { status: 400 });
+      }
 
       // Verificar si la cuenta existe
       const account = await db.streamingAccount.findUnique({

@@ -7,7 +7,7 @@ import {
   sanitizePhone,
   sanitizeUsername,
 } from "@/lib/sanitize";
-import { getClientIdentifier, rateLimit } from "@/lib/rate-limiter";
+import { rateLimit, getClientIP } from "@/lib/rate-limiter";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
 
@@ -21,6 +21,7 @@ const registerSchema = z
     email: z
       .string()
       .trim()
+      .toLowerCase()
       .email("Email no válido")
       .max(255, "El email no puede exceder 255 caracteres"),
     phone: z
@@ -54,7 +55,7 @@ const registerSchema = z
 
 export async function POST(request: NextRequest) {
   try {
-    const identifier = getClientIdentifier(request);
+    const identifier = getClientIP(request);
     const limitCheck = await rateLimit({
       identifier,
       limit: 10,

@@ -446,6 +446,7 @@ export default function Home() {
       //console.log("fetchUserCredits ERROR:", error);
     }
   };
+  
 
   const fetchCartItems = async () => {
     try {

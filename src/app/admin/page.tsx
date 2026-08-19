@@ -496,7 +496,7 @@ export default function AdminPage() {
   const [newSupportContact, setNewSupportContact] = useState({
     name: "",
     number: "",
-    type: "whatsapp",
+    type: "telegram",
     description: "",
     isActive: true,
     order: 0,
@@ -1092,7 +1092,7 @@ export default function AdminPage() {
         setNewSupportContact({
           name: "",
           number: "",
-          type: "whatsapp",
+          type: "telegram",
           description: "",
           isActive: true,
           order: 0,
@@ -7303,7 +7303,9 @@ export default function AdminPage() {
                             htmlFor="contactNumber"
                             className="text-slate-300"
                           >
-                            Número de Teléfono
+                            {newSupportContact.type === "telegram"
+                              ? "Username / Bot de Telegram"
+                              : "Número de Teléfono"}
                           </Label>
                           <Input
                             id="contactNumber"
@@ -7314,9 +7316,20 @@ export default function AdminPage() {
                                 number: e.target.value,
                               })
                             }
-                            placeholder="Ej: +57 300 123 4567"
+                            placeholder={
+                              newSupportContact.type === "telegram"
+                                ? "Ej: @MiBotSoporte"
+                                : "Ej: +57 300 123 4567"
+                            }
                             className="bg-slate-600 border-slate-500 text-white placeholder-slate-400"
                           />
+                          {newSupportContact.type === "telegram" && (
+                            <p className="text-xs text-slate-400 mt-1">
+                              Username del bot o canal (con o sin @). Debe
+                              empezar con letra y solo puede contener letras,
+                              números y guion bajo.
+                            </p>
+                          )}
                         </div>
                         <div>
                           <Label

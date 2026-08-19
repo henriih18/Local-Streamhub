@@ -2,15 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getClientIdentifier, rateLimit } from "@/lib/rate-limiter";
+import { getClientIP, rateLimit } from "@/lib/rate-limiter";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
 
 const resetPasswordSchema = z
   .object({
-    token: z.string().min(64, "Token inválido").max(64, "Token inválido"),
+    token: z
+      .string()
+      .trim()
+      .min(64, "Token inválido")
+      .max(64, "Token inválido"),
     password: z
       .string()
+      .trim()
       .min(8, "La contraseña debe tener al menos 8 caracteres")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
@@ -22,7 +27,7 @@ const resetPasswordSchema = z
 export async function POST(request: NextRequest) {
   try {
     // Rate limit: 5 intentos por IP cada 15 minutos
-    const identifier = getClientIdentifier(request);
+    const identifier = getClientIP(request);
     const limitCheck = await rateLimit({
       identifier,
       limit: 5,
@@ -121,7 +126,7 @@ export async function POST(request: NextRequest) {
           resetPasswordToken: null,
           resetPasswordExpires: null,
           updatedAt: new Date(),
-          tokenVersion: { increment: 1 }
+          tokenVersion: { increment: 1 },
         },
       });
 

@@ -43,7 +43,6 @@ function buildCsp(nonce: string): string {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     "style-src 'self' 'unsafe-inline'",
-    //"connect-src 'self' https://www.riyostream.com wss://www.riyostream.com",
     `connect-src 'self' https://${DOMAIN} wss://${DOMAIN}`,
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",

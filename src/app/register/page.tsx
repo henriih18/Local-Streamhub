@@ -28,6 +28,7 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast-custom";
+import { FloatingStreamingIcons } from "@/components/floating-streaming-icons";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -368,8 +369,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 relative">
+      <FloatingStreamingIcons />
+      <div className="w-full max-w-md relative z-10">
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-white">
