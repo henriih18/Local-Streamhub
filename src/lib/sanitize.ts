@@ -178,6 +178,21 @@ export function sanitizePhone(input: string): string {
 }
 
 /**
+ * Sanitiza un username de Telegram (usuario o bot)
+ * - Elimina @ inicial si existe
+ * - Conserva solo letras, números y guion bajo
+ * - Devuelve en minúsculas (Telegram es case-insensitive)
+ * - No aplica transformaciones si el resultado queda vacío
+ */
+export function sanitizeTelegramUsername(input: string): string {
+  if (typeof input !== "string") return "";
+  const trimmed = input.trim().replace(/^@+/, "");
+  // Solo letras ASCII, números y guion bajo
+  const cleaned = trimmed.replace(/[^a-zA-Z0-9_]/g, "");
+  return cleaned.toLowerCase();
+}
+
+/**
  * Sanitiza nombres de usuario
  */
 export function sanitizeUsername(input: string): string {

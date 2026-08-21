@@ -128,6 +128,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
         .nullable()
         .default("1"),
       saleType: z.enum(["FULL", "PROFILES"]).default("FULL"),
+      deliveryMethod: z.enum(["AUTOMATIC", "SUPPORT"]).default("AUTOMATIC"),
       /* maxProfiles: z.coerce.number().int().min(1).optional().nullable(),
       pricePerProfile: z.coerce.number().positive().optional().nullable(), */
       isPublic: z.boolean().default(false),
@@ -166,6 +167,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       quality,
       screens,
       saleType,
+      deliveryMethod,
       //maxProfiles,
       //pricePerProfile,
       isPublic,
@@ -191,6 +193,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
         quality: sanitizedQuality,
         screens: screens ? String(screens) : null,
         saleType: saleType || "FULL",
+        deliveryMethod: deliveryMethod || "AUTOMATIC",
         //maxProfiles,
         //pricePerProfile,
         maxSlots: maxSlots || allowedUsers?.length || 1,

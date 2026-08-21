@@ -120,8 +120,33 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 
         // ================= STREAMING =================
         if (streamingAccount) {
-          // ---------- PROFILES ----------
-          if (saleType === "PROFILES") {
+          // ---------- ENTREGA POR SOPORTE (stock infinito) ----------
+          if (streamingAccount.deliveryMethod === "SUPPORT") {
+            for (let i = 0; i < quantity; i++) {
+              createdOrders.push(
+                await tx.order.create({
+                  data: {
+                    userId: user.id,
+                    streamingAccountId: streamingAccount.id,
+                    // Sin asignar stock de la BD
+                    // Sin credenciales (accountEmail, etc. quedan null)
+                    quantity: 1,
+                    saleType:
+                      saleType === "PROFILES"
+                        ? SaleType.PROFILES
+                        : SaleType.FULL,
+                    totalPrice: priceAtTime,
+                    status: "COMPLETED",
+                    expiresAt: calculateExpirationDate(
+                      streamingAccount.duration,
+                    ),
+                  },
+                }),
+              );
+            }
+          }
+          // ---------- PROFILES (entrega automática) ----------
+          else if (saleType === "PROFILES") {
             const candidates = await tx.accountProfile.findMany({
               where: {
                 streamingAccountId: streamingAccount.id,
@@ -243,61 +268,89 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 
         // ================= EXCLUSIVE =================
         else if (exclusiveAccount) {
-          const candidates = await tx.exclusiveStock.findMany({
-            where: {
-              exclusiveAccountId: exclusiveAccount.id,
-              isAvailable: true,
-            },
-            select: { id: true },
-            take: quantity,
-          });
+          // ---------- ENTREGA POR SOPORTE (stock infinito) ----------
+          if (exclusiveAccount.deliveryMethod === "SUPPORT") {
+            for (let i = 0; i < quantity; i++) {
+              createdOrders.push(
+                await tx.order.create({
+                  data: {
+                    userId: user.id,
+                    exclusiveAccountId: exclusiveAccount.id,
+                    // Sin asignar stock de la BD
+                    // Sin credenciales
+                    quantity: 1,
+                    saleType:
+                      exclusiveAccount.saleType === "PROFILES"
+                        ? SaleType.PROFILES
+                        : SaleType.FULL,
+                    totalPrice: priceAtTime,
+                    status: "COMPLETED",
+                    expiresAt: calculateExpirationDate(
+                      exclusiveAccount.duration,
+                    ),
+                  },
+                }),
+              );
+            }
+          } else {
+            const candidates = await tx.exclusiveStock.findMany({
+              where: {
+                exclusiveAccountId: exclusiveAccount.id,
+                isAvailable: true,
+              },
+              select: { id: true },
+              take: quantity,
+            });
 
-          if (candidates.length < quantity) {
-            throw new StockConflictError("exclusivo");
-          }
+            if (candidates.length < quantity) {
+              throw new StockConflictError("exclusivo");
+            }
 
-          const result = await tx.exclusiveStock.updateMany({
-            where: {
-              id: { in: candidates.map((c) => c.id) },
-              isAvailable: true,
-            },
-            data: {
-              isAvailable: false,
-              soldToUserId: user.id,
-              soldAt: new Date(),
-            },
-          });
+            const result = await tx.exclusiveStock.updateMany({
+              where: {
+                id: { in: candidates.map((c) => c.id) },
+                isAvailable: true,
+              },
+              data: {
+                isAvailable: false,
+                soldToUserId: user.id,
+                soldAt: new Date(),
+              },
+            });
 
-          if (result.count < quantity) {
-            throw new StockConflictError("exclusivo");
-          }
+            if (result.count < quantity) {
+              throw new StockConflictError("exclusivo");
+            }
 
-          const stocks = await tx.exclusiveStock.findMany({
-            where: {
-              id: { in: candidates.map((c) => c.id) },
-            },
-          });
+            const stocks = await tx.exclusiveStock.findMany({
+              where: {
+                id: { in: candidates.map((c) => c.id) },
+              },
+            });
 
-          for (const s of stocks) {
-            createdOrders.push(
-              await tx.order.create({
-                data: {
-                  userId: user.id,
-                  exclusiveAccountId: exclusiveAccount.id,
-                  exclusiveStockId: s.id,
-                  accountEmail: s.email,
-                  accountPassword: s.password,
-                  quantity: 1,
-                  saleType:
-                    exclusiveAccount.saleType === "PROFILES"
-                      ? SaleType.PROFILES
-                      : SaleType.FULL,
-                  totalPrice: priceAtTime,
-                  status: "COMPLETED",
-                  expiresAt: calculateExpirationDate(exclusiveAccount.duration),
-                },
-              }),
-            );
+            for (const s of stocks) {
+              createdOrders.push(
+                await tx.order.create({
+                  data: {
+                    userId: user.id,
+                    exclusiveAccountId: exclusiveAccount.id,
+                    exclusiveStockId: s.id,
+                    accountEmail: s.email,
+                    accountPassword: s.password,
+                    quantity: 1,
+                    saleType:
+                      exclusiveAccount.saleType === "PROFILES"
+                        ? SaleType.PROFILES
+                        : SaleType.FULL,
+                    totalPrice: priceAtTime,
+                    status: "COMPLETED",
+                    expiresAt: calculateExpirationDate(
+                      exclusiveAccount.duration,
+                    ),
+                  },
+                }),
+              );
+            }
           }
         }
       }
@@ -322,6 +375,9 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
         const { streamingAccount, exclusiveAccount, quantity, saleType } = item;
 
         if (streamingAccount) {
+          // Si la entrega es por soporte, el stock no cambia (es infinito)
+          if (streamingAccount.deliveryMethod === "SUPPORT") continue;
+
           const currentStock =
             saleType === "PROFILES"
               ? streamingAccount.profileStocks.filter((s) => s.isAvailable)
@@ -336,6 +392,9 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
             newStock: Math.max(0, currentStock - quantity),
           });
         } else if (exclusiveAccount) {
+          // Si la entrega es por soporte, el stock no cambia (es infinito)
+          if (exclusiveAccount.deliveryMethod === "SUPPORT") continue;
+
           const currentStock = exclusiveAccount.exclusiveStocks.filter(
             (s) => s.isAvailable,
           ).length;
@@ -362,19 +421,26 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
           if (order.status !== "COMPLETED") continue;
 
           let serviceName = "Servicio";
+          let orderDeliveryMethod: string = "AUTOMATIC";
 
           if (order.streamingAccountId) {
             const sa = await db.streamingAccount.findUnique({
               where: { id: order.streamingAccountId },
-              select: { name: true },
+              select: { name: true, deliveryMethod: true },
             });
-            if (sa) serviceName = sa.name;
+            if (sa) {
+              serviceName = sa.name;
+              orderDeliveryMethod = sa.deliveryMethod;
+            }
           } else if (order.exclusiveAccountId) {
             const ea = await db.exclusiveAccount.findUnique({
               where: { id: order.exclusiveAccountId },
-              select: { name: true },
+              select: { name: true, deliveryMethod: true },
             });
-            if (ea) serviceName = ea.name;
+            if (ea) {
+              serviceName = ea.name;
+              orderDeliveryMethod = ea.deliveryMethod;
+            }
           }
 
           let email = "";
@@ -410,7 +476,19 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 
           let message: string;
 
-          if (isExclusive) {
+          // ══════ MENSAJE PARA ENTREGA POR SOPORTE ══════
+          if (orderDeliveryMethod === "SUPPORT") {
+            const supportBotUsername = "riyostream_soporte_bot";
+            // Deep link con el ID de la orden → el bot lo recibe automáticamente
+            const supportUrl = `https://t.me/${supportBotUsername}?start=${order.id}`;
+
+            message = `🎫 *Compra procesada*\n\n`;
+            message += `🎬 *Cuenta:* ${escapeMarkdown(serviceName)}\n`;
+            message += `🆔 *ID de compra:* \`${order.id}\`\n\n`;
+            message += `💬 Esta cuenta se entrega de forma personalizada por nuestro equipo de soporte.\n\n`;
+            message += `Toca el botón de abajo para iniciar el chat con soporte y recibir tus credenciales:`;
+            message += `\n[👉 Abrir chat de soporte](${supportUrl})`;
+          } else if (isExclusive) {
             // ══════ MENSAJE PREMIUM PARA CUENTAS EXCLUSIVAS ══════
             message = `👑✨ *¡COMPRA EXCLUSIVA EXITOSA!* ✨👑\n\n`;
             message += `💎 *${escapeMarkdown(serviceName)}*\n`;

@@ -54,6 +54,7 @@ export const PUT = requireAdmin(
         screens: z.coerce.number().int().min(1).max(20).optional(),
         isActive: z.boolean().optional(),
         saleType: z.enum(["FULL", "PROFILES"]).optional(),
+        deliveryMethod: z.enum(["AUTOMATIC", "SUPPORT"]).optional(),
         maxProfiles: z.coerce.number().int().min(1).optional().nullable(),
         pricePerProfile: z.coerce.number().positive().optional().nullable(),
       });
@@ -82,6 +83,7 @@ export const PUT = requireAdmin(
         screens,
         isActive,
         saleType,
+        deliveryMethod,
         maxProfiles,
         pricePerProfile,
       } = validation.data;
@@ -98,6 +100,7 @@ export const PUT = requireAdmin(
           ...(screens !== undefined && { screens }),
           ...(isActive !== undefined && { isActive }),
           ...(saleType && { saleType }),
+          ...(deliveryMethod && { deliveryMethod }),
           ...(maxProfiles !== undefined &&
             maxProfiles !== null && { maxProfiles }),
           ...(pricePerProfile !== undefined &&

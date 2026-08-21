@@ -119,6 +119,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
         .min(1, "Mínimo 1 pantalla")
         .max(20, "Máximo 20 pantallas"),
       saleType: z.enum(["FULL", "PROFILES"]).default("FULL"),
+      deliveryMethod: z.enum(["AUTOMATIC", "SUPPORT"]).default("AUTOMATIC"),
       /* maxProfiles: z.coerce.number().int().min(1).optional().nullable(),
       pricePerProfile: z.coerce.number().positive().optional().nullable(), */
     });
@@ -146,6 +147,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       quality,
       screens,
       saleType,
+      deliveryMethod,
       //maxProfiles,
       //pricePerProfile,
     } = validation.data;
@@ -172,6 +174,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
         quality: sanitizedQuality,
         screens,
         saleType: saleType || "FULL",
+        deliveryMethod: deliveryMethod || "AUTOMATIC",
         order: nextOrder,
         isActive: false,
         //maxProfiles,

@@ -54,8 +54,8 @@ model User {
   sentMessages             Message[]          @relation("SentMessages")
   receivedMessages         Message[]          @relation("ReceivedMessages")
   telegramChatId           String?            @unique
-  resetPasswordToken        String?  @unique
-  resetPasswordExpires      DateTime?
+  resetPasswordToken       String?            @unique
+  resetPasswordExpires     DateTime?
   tokenVersion             Int                @default(0)
 }
 
@@ -119,6 +119,7 @@ model StreamingAccount {
   saleType        SaleType         @default(FULL) // FULL account or PROFILES
   maxProfiles     Int? // Max number of profiles for sale
   pricePerProfile Float?
+  deliveryMethod  String           @default("AUTOMATIC")
   order           Int              @default(0)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -258,6 +259,7 @@ model ExclusiveAccount {
   saleType        String           @default("FULL") // FULL or PROFILES
   maxProfiles     Int? // Maximum profiles for PROFILE sales
   pricePerProfile Float? // Price per profile for PROFILE sales
+  deliveryMethod  String           @default("AUTOMATIC")
   maxSlots        Int // Maximum number of users
   isPublic        Boolean          @default(false) // If true, all users can see it
   isActive        Boolean          @default(true)
@@ -287,7 +289,6 @@ model ExclusiveStock {
   soldToUser         User?            @relation(fields: [soldToUserId], references: [id])
   orders             Order[]
 }
-
 
 model Message {
   id         String      @id @default(cuid())
@@ -438,4 +439,20 @@ model VendorPricing {
   updatedAt          DateTime @updatedAt
 
   streamingAccount StreamingAccount @relation(fields: [streamingAccountId], references: [id])
+}
+
+model TelegramSupportThread {
+  id           String   @id @default(cuid())
+  userChatId   String
+  botType      String
+  threadId     Int
+  groupId      String
+  userName     String?
+  userUsername String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userChatId, botType])
+  @@index([threadId])
+  @@index([userChatId])
 }
