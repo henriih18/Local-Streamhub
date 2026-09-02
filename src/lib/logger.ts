@@ -15,5 +15,13 @@ export const logger = pino({
           ignore: "pid,hostname",
         },
       },
-  redact: ["req.headers.authorization", "req.headers.cookie"],
+  redact: [
+    "req.headers.authorization",
+    "req.headers.cookie",
+    "headers.authorization",
+    "headers.cookie",
+    "*.headers.authorization",
+    "*.headers.cookie",
+    "headers",
+  ],
 });

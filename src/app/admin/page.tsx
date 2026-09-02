@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense, useMemo } from "react";
 import Navigation from "@/components/navigation";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -111,6 +112,8 @@ interface User {
   id: string;
   email: string;
   name: string | null;
+
+  username: string | null;
   credits: number;
   totalSpent: number;
   role: string;
@@ -147,6 +150,7 @@ interface StreamingAccount {
   screens: number;
   isActive: boolean;
   saleType: string;
+  deliveryMethod?: "AUTOMATIC" | "SUPPORT";
 
   order: number;
   _count: {
@@ -463,6 +467,7 @@ export default function AdminPage() {
     quality: "4K HDR",
     screens: "",
     saleType: "FULL",
+    deliveryMethod: "AUTOMATIC" as "AUTOMATIC" | "SUPPORT",
   });
 
   const [newStreamingType, setNewStreamingType] = useState({
@@ -489,6 +494,7 @@ export default function AdminPage() {
     quality: "4K HDR",
     screens: "",
     saleType: "FULL",
+    deliveryMethod: "AUTOMATIC" as "AUTOMATIC" | "SUPPORT",
     isPublic: "false",
     expiresAt: "",
   });
@@ -879,7 +885,7 @@ export default function AdminPage() {
     }
   }, [orderCurrentPage]);
 
-  // Resetear a página 1 y re-fetch cuando cambian filtros de pedidos
+  // Resetear a página 1 y re-fetch cuando cambian filtros de pedidos o búsqueda
   useEffect(() => {
     if (activeTab === "pedidos") {
       setOrderCurrentPage((prev) => {
@@ -888,7 +894,7 @@ export default function AdminPage() {
         return 1;
       });
     }
-  }, [renewalFilter]);
+  }, [renewalFilter, orderSearchQuery]);
 
   // Funciones de utilidad
   const formatDate = (dateString: string | null) => {
@@ -968,14 +974,19 @@ export default function AdminPage() {
       });
     }
 
-    // Filtro por búsqueda de email (cliente - datos desencriptados)
+    // Filtro frontend: email desencriptado (no se puede buscar en BD) y/o ID (fallback)
     if (orderSearchQuery.trim() !== "") {
       const searchQuery = orderSearchQuery.toLowerCase().trim();
       result = result.filter((order) => {
+        // Por email de la cuenta/perfil (desencriptado)
         if (
           order.accountEmail &&
           order.accountEmail.toLowerCase().includes(searchQuery)
         ) {
+          return true;
+        }
+        // Por ID de la orden (si el backend no filtró, ej: búsqueda por email)
+        if (order.id && order.id.toLowerCase().includes(searchQuery)) {
           return true;
         }
         return false;
@@ -1282,9 +1293,15 @@ export default function AdminPage() {
         page: orderCurrentPage.toString(),
         limit: ORDERS_PER_PAGE.toString(),
         renewal: renewalFilter,
-
         paginated: "true",
       });
+
+      // Si el texto parece un ID de compra (cuid), enviarlo al backend para buscar en TODAS las órdenes
+      // El email está encriptado en la BD, así que se filtra en el frontend
+      const search = orderSearchQuery.trim();
+      if (search && /^c[a-z0-9]{8,}$/i.test(search)) {
+        params.append("search", search);
+      }
 
       const res = await adminFetch(`/api/admin/orders?${params.toString()}`);
       const data = await res.json();
@@ -1457,6 +1474,7 @@ export default function AdminPage() {
           quality: "4K HDR",
           screens: "",
           saleType: "FULL",
+          deliveryMethod: "AUTOMATIC" as "AUTOMATIC" | "SUPPORT",
         });
         //fetchData();
         await fetchAccountsData();
@@ -1692,6 +1710,7 @@ export default function AdminPage() {
           quality: newExclusiveAccount.quality,
           screens: newExclusiveAccount.screens,
           saleType: newExclusiveAccount.saleType,
+          deliveryMethod: newExclusiveAccount.deliveryMethod,
           isPublic: newExclusiveAccount.isPublic === "true",
           expiresAt: newExclusiveAccount.expiresAt || undefined,
           maxSlots: selectedUsersForExclusive.length || 1,
@@ -1713,7 +1732,7 @@ export default function AdminPage() {
           quality: "4K HDR",
           screens: "",
           saleType: "FULL",
-
+          deliveryMethod: "AUTOMATIC" as "AUTOMATIC" | "SUPPORT",
           isPublic: "false",
           expiresAt: "",
         });
@@ -3686,11 +3705,17 @@ export default function AdminPage() {
                           <SelectItem value="1 mes" className="text-white">
                             1 Mes
                           </SelectItem>
+                          <SelectItem value="2 meses" className="text-white">
+                            2 Meses
+                          </SelectItem>
                           <SelectItem value="3 meses" className="text-white">
                             3 Meses
                           </SelectItem>
                           <SelectItem value="6 meses" className="text-white">
                             6 Meses
+                          </SelectItem>
+                          <SelectItem value="1 año" className="text-white">
+                            1 Año
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -3787,6 +3812,29 @@ export default function AdminPage() {
                           </SelectItem>
                         </SelectContent>
                       </Select>
+                      <div className="space-y-2">
+                        <Label className="text-slate-300">
+                          Entrega por soporte
+                        </Label>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={newAccount.deliveryMethod === "SUPPORT"}
+                            onCheckedChange={(checked) =>
+                              setNewAccount({
+                                ...newAccount,
+                                deliveryMethod: checked
+                                  ? "SUPPORT"
+                                  : "AUTOMATIC",
+                              })
+                            }
+                          />
+                          <span className="text-sm text-slate-400">
+                            {newAccount.deliveryMethod === "SUPPORT"
+                              ? "Sí (stock infinito, entrega manual)"
+                              : "No (entrega automática)"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <Button
@@ -4438,7 +4486,7 @@ export default function AdminPage() {
                       {/* Buscador por Email de Cuenta/Perfil */}
                       <div className="flex flex-col space-y-2">
                         <Label className="text-slate-300 text-sm font-medium">
-                          Buscar por Email de Cuenta/Perfil
+                          ID de compra (ej: cm1234...) o email...
                         </Label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -4463,7 +4511,7 @@ export default function AdminPage() {
                         </div>
                         {orderSearchQuery && (
                           <p className="text-xs text-slate-400">
-                            Buscando pedidos con email que contenga: "
+                            Buscando pedidos que coincidan con: "
                             {orderSearchQuery}"
                           </p>
                         )}
@@ -4495,7 +4543,7 @@ export default function AdminPage() {
                               {expirationFilter === "all" &&
                                 renewalFilter === "all" &&
                                 orderSearchQuery.trim() !== "" &&
-                                ` (por email: "${orderSearchQuery}")`}
+                                ` (por ID o email: "${orderSearchQuery}")`}
                               {expirationFilter !== "all" &&
                                 renewalFilter === "all" &&
                                 orderSearchQuery.trim() !== "" &&
@@ -5240,7 +5288,7 @@ export default function AdminPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-wrap items-center gap-2 mb-2">
                                 <h3 className="font-semibold text-white break-words">
-                                  {user.name || user.email}
+                                  {user.email}
                                 </h3>
                                 <div className="flex flex-wrap items-center gap-2 mt-1">
                                   {user.isBlocked ? (
@@ -5289,7 +5337,7 @@ export default function AdminPage() {
                                 </div>
                               </div>
                               <p className="text-sm text-slate-400 mb-1 break-all">
-                                {user.email}
+                                {user.name || user.username}
                               </p>
                               <p className="text-xs text-slate-500">
                                 Registrado:{" "}
@@ -6553,6 +6601,12 @@ export default function AdminPage() {
                             <SelectItem value="3 meses" className="text-white">
                               3 Meses
                             </SelectItem>
+                            <SelectItem value="6 meses" className="text-white">
+                              6 Meses
+                            </SelectItem>
+                            <SelectItem value="1 año" className="text-white">
+                              1 Año
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -6666,53 +6720,32 @@ export default function AdminPage() {
                             </SelectItem>
                           </SelectContent>
                         </Select>
+                        <div className="space-y-2">
+                          <Label className="text-slate-300">
+                            Entrega por soporte
+                          </Label>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={
+                                newExclusiveAccount.deliveryMethod === "SUPPORT"
+                              }
+                              onCheckedChange={(checked) =>
+                                setNewExclusiveAccount({
+                                  ...newExclusiveAccount,
+                                  deliveryMethod: checked
+                                    ? "SUPPORT"
+                                    : "AUTOMATIC",
+                                })
+                              }
+                            />
+                            <span className="text-sm text-slate-400">
+                              {newExclusiveAccount.deliveryMethod === "SUPPORT"
+                                ? "Sí (stock infinito, entrega manual)"
+                                : "No (entrega automática)"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      {/* {newExclusiveAccount.saleType === "PROFILES" && (
-                        <>
-                          <div>
-                            <Label
-                              htmlFor="exclusiveMaxProfiles"
-                              className="text-slate-300"
-                            >
-                              Máximo de Perfiles
-                            </Label>
-                            <Input
-                              id="exclusiveMaxProfiles"
-                              type="number"
-                              value={newExclusiveAccount.maxProfiles}
-                              onChange={(e) =>
-                                setNewExclusiveAccount({
-                                  ...newExclusiveAccount,
-                                  maxProfiles: e.target.value,
-                                })
-                              }
-                              placeholder="5"
-                              className="bg-slate-700 border-slate-600 text-white"
-                            />
-                          </div>
-                          <div>
-                            <Label
-                              htmlFor="exclusivePricePerProfile"
-                              className="text-slate-300"
-                            >
-                              Precio por Perfil (COP)
-                            </Label>
-                            <Input
-                              id="exclusivePricePerProfile"
-                              type="number"
-                              value={newExclusiveAccount.pricePerProfile}
-                              onChange={(e) =>
-                                setNewExclusiveAccount({
-                                  ...newExclusiveAccount,
-                                  pricePerProfile: e.target.value,
-                                })
-                              }
-                              placeholder="15000"
-                              className="bg-slate-700 border-slate-600 text-white"
-                            />
-                          </div>
-                        </>
-                      )} */}
 
                       <div>
                         <Label
@@ -7960,11 +7993,17 @@ export default function AdminPage() {
                       <SelectItem value="1 mes" className="text-white">
                         1 mes
                       </SelectItem>
+                      <SelectItem value="2 meses" className="text-white">
+                        2 Meses
+                      </SelectItem>
                       <SelectItem value="3 meses" className="text-white">
                         3 meses
                       </SelectItem>
                       <SelectItem value="6 meses" className="text-white">
                         6 meses
+                      </SelectItem>
+                      <SelectItem value="1 año" className="text-white">
+                        1 Año
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -8073,6 +8112,27 @@ export default function AdminPage() {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  <div className="space-y-2">
+                    <Label className="text-slate-300">
+                      Entrega por soporte
+                    </Label>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={editingAccount.deliveryMethod === "SUPPORT"}
+                        onCheckedChange={(checked) =>
+                          setEditingAccount({
+                            ...editingAccount,
+                            deliveryMethod: checked ? "SUPPORT" : "AUTOMATIC",
+                          })
+                        }
+                      />
+                      <span className="text-sm text-slate-400">
+                        {editingAccount.deliveryMethod === "SUPPORT"
+                          ? "Sí (stock infinito, entrega manual)"
+                          : "No (entrega automática)"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <input

@@ -58,3 +58,13 @@ export async function sendTelegramMessage(
 export function generateTempToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
+
+export function escapeMarkdown(text: string | null | undefined): string {
+  if (!text) return "";
+  return String(text).replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+}
+
+export function maskPhone(phone: string | null | undefined): string {
+  if (!phone) return "••••";
+  return phone.length > 4 ? `••••${phone.slice(-4)}` : "••••";
+}

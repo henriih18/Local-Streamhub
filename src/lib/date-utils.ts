@@ -12,6 +12,7 @@ export function durationToMonths(duration: string): number {
     "1 mes": 1,
     "3 meses": 3,
     "6 meses": 6,
+    "1 año": 12,
   };
 
   return durationMap[duration] || 1; // Por defecto 1 mes si no se encuentra

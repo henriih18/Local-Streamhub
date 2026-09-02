@@ -210,6 +210,7 @@ export default function AccountPage() {
       fetchUserOrders(1, orderFilter);
       fetchSupportContacts();
       loadCartItems();
+      fetchUserCredits();
     } else {
       setOrders([]);
       setSupportContacts([]);
@@ -233,6 +234,26 @@ export default function AccountPage() {
       /* console.error("Error al cargar articulos del carrito", error); */
     }
   };
+
+  const fetchUserCredits = async () => {
+    try {
+      const response = await fetch(`/api/user/credits`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUser((prevUser: any) => {
+          if (!prevUser) return prevUser;
+          const updatedUser = { ...prevUser, credits: data.credits };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          return updatedUser;
+        });
+      }
+    } catch (error) {
+      /* console.error("Error al obtener créditos:", error); */
+    }
+  };
+
   useRealTimeUpdates({
     userId: user?.id,
     onCreditsUpdated: (creditsData) => {

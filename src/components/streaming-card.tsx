@@ -22,6 +22,7 @@ import {
   Crown,
   Gift,
   TrendingUp,
+  Headphones,
 } from "lucide-react";
 import { QuantitySelector } from "@/components/ui/quantity-selector";
 import { sanitizeCssValue } from "@/lib/sanitize";
@@ -40,6 +41,7 @@ interface StreamingAccount {
   saleType: "FULL" | "PROFILES";
   maxProfiles?: number;
   pricePerProfile?: number;
+  deliveryMethod?: "AUTOMATIC" | "SUPPORT";
   specialOffer?: {
     discountPercentage: number;
     targetSpent: number;
@@ -98,6 +100,7 @@ export function StreamingCard({
     !account.streamingType && !account.accountStocks && !account.profileStocks;
   const isSpecialOffer = !!account.specialOffer;
   const isVendor = userRole === "VENDEDOR";
+  const isSupportDelivery = account.deliveryMethod === "SUPPORT";
 
   // Calcular la cantidad máxima según el tipo de cuenta
   const maxQuantity = isExclusiveAccount ? exclusiveStock : availableStock;
@@ -173,27 +176,33 @@ export function StreamingCard({
       {/* Insignias especiales - Mejoradas para Exclusividad */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         {isVendor &&
-          account.originalPrice && ( // <-- AGREGAR ESTE BLOQUE
-            <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 px-3 py-1 text-xs font-bold shadow-lg shadow-blue-500/30">
-              <Percent className="w-3 h-3 mr-1" />
+          account.originalPrice && ( 
+            <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 px-2 py-0.5 text-[10px] font-bold shadow-lg shadow-blue-500/30">
+              <Percent className="w-2.5 h-2.5 mr-0.5" />
               PRECIO VENDEDOR
             </Badge>
           )}
+        {isSupportDelivery && (
+          <Badge className="bg-gradient-to-r from-cyan-500 to-teal-500 text-white border-0 px-2 py-0.5 text-[10px] font-bold shadow-lg shadow-cyan-500/30">
+            <Headphones className="w-2.5 h-2.5 mr-0.5" />
+            ENTREGA POR SOPORTE
+          </Badge>
+        )}
         {isExclusiveAccount && (
-          <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 px-3 py-1 text-xs font-bold shadow-lg shadow-amber-500/30">
-            <Crown className="w-3 h-3 mr-1" />
+          <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 px-2 py-0.5 text-[10px] font-bold shadow-lg shadow-amber-500/30">
+            <Crown className="w-2.5 h-2.5 mr-0.5" />
             EXCLUSIVO
           </Badge>
         )}
         {isMostPopular && !isExclusiveAccount && (
-          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 px-3 py-1 text-xs font-bold">
-            <TrendingUp className="w-3 h-3 mr-1" />
+          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 px-2 py-0.5 text-[10px] font-bold">
+            <TrendingUp className="w-2.5 h-2.5 mr-0.5" />
             MÁS POPULAR
           </Badge>
         )}
         {isSpecialOffer && !isExclusiveAccount && (
-          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 px-3 py-1 text-xs font-bold">
-            <Gift className="w-3 h-3 mr-1" />
+          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 px-2 py-0.5 text-[10px] font-bold">
+            <Gift className="w-2.5 h-2.5 mr-0.5" />
             {account.specialOffer?.discountPercentage}% OFF
           </Badge>
         )}
@@ -288,7 +297,7 @@ export function StreamingCard({
                 }`}
               />
               <span
-                className={`text-sm ${
+                className={`text-sm capitalize ${
                   isExclusiveAccount ? "text-amber-100" : "text-gray-300"
                 }`}
               >
@@ -422,14 +431,18 @@ export function StreamingCard({
               <div className="text-right">
                 <div
                   className={`flex items-center text-sm ${
-                    availableStock > 0 || exclusiveStock > 0
+                    isSupportDelivery ||
+                    availableStock > 0 ||
+                    exclusiveStock > 0
                       ? isExclusiveAccount
                         ? "text-amber-400"
                         : "text-green-400"
                       : "text-red-400"
                   }`}
                 >
-                  {availableStock > 0 || exclusiveStock > 0 ? (
+                  {isSupportDelivery ||
+                  availableStock > 0 ||
+                  exclusiveStock > 0 ? (
                     <>
                       <Check className="h-4 w-4 mr-1" />
                       <span>Disponible</span>
@@ -446,10 +459,10 @@ export function StreamingCard({
         </div>
       </CardContent>
 
-      <CardFooter className="relative z-10 pt-4">
+            <CardFooter className="relative z-10 pt-4">
         <Button
           onClick={handleAddToCart}
-          disabled={availableStock === 0 && exclusiveStock === 0}
+          disabled={!isSupportDelivery && availableStock === 0 && exclusiveStock === 0}
           style={
             account.streamingType?.color &&
             account.streamingType.color.startsWith("#")
@@ -457,7 +470,7 @@ export function StreamingCard({
               : {}
           }
           className={`w-full hover:opacity-90 text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg ${
-            availableStock === 0 && exclusiveStock === 0
+            !isSupportDelivery && availableStock === 0 && exclusiveStock === 0
               ? "opacity-50 cursor-not-allowed"
               : ""
           } ${
@@ -476,7 +489,7 @@ export function StreamingCard({
           size="lg"
         >
           <ShoppingCart className="h-4 w-4 mr-2" />
-          {availableStock === 0 && exclusiveStock === 0
+          {!isSupportDelivery && availableStock === 0 && exclusiveStock === 0
             ? "Agotado"
             : "Agregar al Carrito"}
         </Button>

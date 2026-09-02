@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { escapeMarkdown } from "@/lib/telegram";
+import { timingSafeEqual } from "crypto";
 
 const API = process.env.TELEGRAM_API_URL || "http://telegram-bot-api:8081";
 const TOKEN = process.env.TELEGRAM_SUPPORT_BOT_TOKEN || "";
@@ -9,7 +11,15 @@ const BOT_TYPE = "support";
 function verifySecret(req: NextRequest): boolean {
   const secret = process.env.TELEGRAM_SUPPORT_WEBHOOK_SECRET;
   if (!secret) return process.env.NODE_ENV !== "production";
-  return req.headers.get("X-Telegram-Bot-Api-Secret-Token") === secret;
+
+  const received = req.headers.get("X-Telegram-Bot-Api-Secret-Token");
+  if (!received) return false;
+
+  // Comparación timing-safe (evita ataques de temporización)
+  const a = Buffer.from(secret);
+  const b = Buffer.from(received);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 async function botApi(method: string, body: unknown) {
@@ -110,7 +120,7 @@ export async function POST(req: NextRequest) {
     await botApi("sendMessage", {
       chat_id: GROUP_ID,
       message_thread_id: threadId,
-      text: `🆕 *Nueva conversación de Soporte*\n\n👤 *Cliente:* ${userName}\n🆔 \`${cbChatId}\`\n\nEscribe en este hilo para responderle.`,
+      text: `🆕 *Nueva conversación de Soporte*\n\n👤 *Cliente:* ${escapeMarkdown(userName)}\n🆔 \`${cbChatId}\`\n\nEscribe en este hilo para responderle.`,
       parse_mode: "Markdown",
     });
 
@@ -137,10 +147,10 @@ export async function POST(req: NextRequest) {
         where: { id: orderId },
         include: {
           streamingAccount: {
-            select: { name: true, deliveryMethod: true },
+            select: { name: true, type: true, deliveryMethod: true },
           },
           exclusiveAccount: {
-            select: { name: true, deliveryMethod: true },
+            select: { name: true, type: true, deliveryMethod: true },
           },
         },
       });
@@ -202,8 +212,14 @@ export async function POST(req: NextRequest) {
       }
 
       // 5. Preparar datos de la orden
+      // accountType = modalidad de venta (Cuenta completa o Perfil)
+      // serviceType = tipo de servicio que creas en el admin (Netflix, Disney+, IPTV, etc.)
       const accountType =
         order.saleType === "PROFILES" ? "Perfil" : "Cuenta completa";
+      const serviceType =
+        order.streamingAccount?.type ||
+        order.exclusiveAccount?.type ||
+        "Servicio";
       const totalPrice = order.totalPrice.toLocaleString("es-CO", {
         style: "currency",
         currency: "COP",
@@ -229,7 +245,7 @@ export async function POST(req: NextRequest) {
           select: { fullName: true, email: true, username: true },
         });
         if (realOwner) {
-          ownerInfo = `\n🔴 *Dueño real:* ${realOwner.fullName || "N/A"} (\`${realOwner.email || "sin email"}\`)`;
+          ownerInfo = `\n🔴 *Dueño real:* ${escapeMarkdown(realOwner.fullName)} (\`${escapeMarkdown(realOwner.email || "sin email")}\`)`;
         }
       }
 
@@ -247,14 +263,14 @@ export async function POST(req: NextRequest) {
           chat_id: existingThread.groupId,
           message_thread_id: existingThread.threadId,
           text:
-            `🛒 *Orden:* \`${orderId}\`\n` +
-            `🎬 *Cuenta:* ${accountName}\n` +
-            `📦 *Tipo:* ${accountType}\n` +
+            `🛒 *Orden:* \`${orderId}\`\n\n` +
+            `🎬 *Cuenta:* ${escapeMarkdown(accountName)}\n` +
+            `🏷️ *Tipo:* ${serviceType}\n\n` +
             `💰 *Precio:* ${totalPrice}\n` +
             `📅 *Comprada:* ${createdAt}\n` +
             `⏰ *Vence:* ${expiresAt}\n\n` +
-            `👤 *Cliente:* ${userFullName}\n` +
-            `📧 *Email:* \`${userEmail}\`\n` +
+            `👤 *Cliente:* ${escapeMarkdown(userFullName)}\n` +
+            `📧 *Email:* \`${escapeMarkdown(userEmail)}\`\n` +
             `🆔 *Telegram:* \`${chatId}\`${ownerInfo}\n\n` +
             `${verificationStatus}\n\n` +
             `Entrega las credenciales al usuario en este hilo.`,
@@ -265,7 +281,7 @@ export async function POST(req: NextRequest) {
         await sendToUser(
           chatId,
           `✅ *Orden agregada a tu conversación*\n\n` +
-            `🎬 *Cuenta:* ${accountName}\n` +
+            `🎬 *Cuenta:* ${escapeMarkdown(accountName)}\n` +
             `🆔 *Orden:* \`${orderId}\`\n\n` +
             `Un agente te entregará las credenciales en este chat enseguida.`,
         );
@@ -316,14 +332,14 @@ export async function POST(req: NextRequest) {
         chat_id: GROUP_ID,
         message_thread_id: threadId,
         text:
-          `🛒 *Orden:* \`${orderId}\`\n` +
-          `🎬 *Cuenta:* ${accountName}\n` +
-          `📦 *Tipo:* ${accountType}\n` +
+          `🛒 *Orden:* \`${orderId}\`\n\n` +
+          `🎬 *Cuenta:* ${escapeMarkdown(accountName)}\n` +
+          `🏷️ *Tipo:* ${serviceType}\n\n` +
           `💰 *Precio:* ${totalPrice}\n` +
           `📅 *Comprada:* ${createdAt}\n` +
           `⏰ *Vence:* ${expiresAt}\n\n` +
-          `👤 *Cliente:* ${userFullName}\n` +
-          `📧 *Email:* \`${userEmail}\`\n` +
+          `👤 *Cliente:* ${escapeMarkdown(userFullName)}\n` +
+          `📧 *Email:* \`${escapeMarkdown(userEmail)}\`\n` +
           `🆔 *Telegram:* \`${chatId}\`${ownerInfo}\n\n` +
           `${verificationStatus}\n\n` +
           `Entrega las credenciales al usuario en este hilo.`,
@@ -334,7 +350,7 @@ export async function POST(req: NextRequest) {
       await sendToUser(
         chatId,
         `✅ *Ticket creado*\n\n` +
-          `🎬 *Cuenta:* ${accountName}\n` +
+          `🎬 *Cuenta:* ${escapeMarkdown(accountName)}\n` +
           `🆔 *Orden:* \`${orderId}\`\n\n` +
           `Un agente te entregará las credenciales en este chat enseguida.`,
       );
@@ -357,14 +373,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // ══════ CASO: /cancel (bloqueado) ══════
+    /* // ══════ CASO: /cancel (bloqueado) ══════
     if (text === "/cancel") {
       await sendToUser(
         chatId,
         "🔒 *Esta conversación no se puede cerrar*\n\nTu conversación con soporte es permanente. Escribe tu mensaje y un agente te responderá pronto.",
       );
       return NextResponse.json({ ok: true });
-    }
+    } */
 
     // ══════ CASO: Mensaje normal del usuario ══════
     const thread = await db.telegramSupportThread.findUnique({
@@ -377,10 +393,38 @@ export async function POST(req: NextRequest) {
     }
 
     const userName = msg.from?.first_name || "Usuario";
+
+    // ══════ FOTO: captura / comprobante que envía el usuario ══════
+    if (msg.photo?.length) {
+      // Telegram envía el array "photo" ordenado de menor a mayor tamaño;
+      // tomamos el último (la mayor resolución disponible).
+      const fileId = msg.photo[msg.photo.length - 1].file_id;
+      const caption = msg.caption || "";
+
+      const payload: Record<string, unknown> = {
+        chat_id: thread.groupId,
+        message_thread_id: thread.threadId,
+        photo: fileId,
+      };
+
+      if (caption) {
+        payload.caption = `🆘 *${escapeMarkdown(userName)}:*\n${escapeMarkdown(caption)}`;
+        payload.parse_mode = "Markdown";
+      }
+
+      await botApi("sendPhoto", payload);
+      return NextResponse.json({ ok: true });
+    }
+
+    // ══════ TEXTO ══════
+    if (!text) return NextResponse.json({ ok: true });
+
     await botApi("sendMessage", {
       chat_id: thread.groupId,
       message_thread_id: thread.threadId,
-      text: `🆘 *${userName}:*\n${text}`,
+      // FIX: escapar nombre y texto del usuario → previene inyección de
+      // Markdown (phishing) y pérdida silenciosa de mensajes
+      text: `🆘 *${escapeMarkdown(userName)}:*\n${escapeMarkdown(text)}`,
       parse_mode: "Markdown",
     });
 
@@ -407,7 +451,10 @@ export async function POST(req: NextRequest) {
     if (!text) return NextResponse.json({ ok: true });
 
     const adminName = msg.from?.first_name || "Agente";
-    await sendToUser(thread.userChatId, `📨 *${adminName}:*\n\n${text}`);
+    await sendToUser(
+      thread.userChatId,
+      `📨 *${escapeMarkdown(adminName)}:*\n\n${text}`,
+    );
 
     return NextResponse.json({ ok: true });
   }

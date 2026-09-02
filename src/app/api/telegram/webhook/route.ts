@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sendTelegramMessage } from "@/lib/telegram";
+import { sendTelegramMessage, maskPhone } from "@/lib/telegram";
 import { logger } from "@/lib/logger";
 import { timingSafeEqual } from "crypto";
 
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     // Verificar autenticidad del webhook
     if (!verifyWebhookSecret(req)) {
       logger.warn(
-        { headers: Object.fromEntries(req.headers.entries()) },
+        { action: "webhook_unauthorized", context: "telegram" },
         "[SECURITY] Webhook sin token válido",
       );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,6 +51,25 @@ export async function POST(req: NextRequest) {
     // ── CASO 1: El usuario compartió su contacto ──
     if (contact) {
       const phone = contact.phone_number;
+      const senderId = body.message.from?.id;
+
+      // Solo se acepta el contacto compartido con el BOTÓN (user_id propio)
+      if (
+        !senderId ||
+        !contact.user_id ||
+        Number(contact.user_id) !== Number(senderId)
+      ) {
+        logger.warn(
+          { chatId, action: "contact_not_owned", context: "telegram" },
+          "[Telegram] Contacto rechazado: no pertenece al emisor",
+        );
+        await sendTelegramMessage(
+          chatId,
+          "⚠️ Debes compartir TU PROPIO número usando el botón *📱 Compartir mi número*. No se aceptan contactos adjuntados manualmente.",
+          { parse_mode: "Markdown" },
+        );
+        return NextResponse.json({ ok: true });
+      }
 
       const linkToken = await db.telegramLinkToken.findFirst({
         where: {
@@ -62,7 +81,7 @@ export async function POST(req: NextRequest) {
 
       if (!linkToken) {
         logger.warn(
-          { chatId, phone, action: "link_no_token" },
+          { chatId, phone: maskPhone(phone), action: "link_no_token" },
           "[Telegram] Sin token activo para vincular teléfono",
         );
         await sendTelegramMessage(
@@ -84,7 +103,7 @@ export async function POST(req: NextRequest) {
       logger.info(
         {
           chatId: chatId,
-          phone: phone,
+          phone: maskPhone(phone),
           action: "link_phone",
           context: "telegram",
         },
