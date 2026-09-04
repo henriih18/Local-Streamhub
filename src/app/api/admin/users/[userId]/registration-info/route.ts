@@ -123,22 +123,25 @@ export const PUT = requireAdmin(
         .object({
           fullName: z
             .string()
+            .trim()
             .min(3, "El nombre debe tener al menos 3 caracteres")
             .max(100, "Nombre demasiado largo"),
           username: z
             .string()
+            .trim()
             .min(3, "El usuario debe tener al menos 3 caracteres")
             .max(20, "El usuario no puede exceder 20 caracteres")
             .regex(
               /^[a-zA-Z0-9_]+$/,
               "Solo se permiten letras, números y guiones bajos",
             ),
-          email: z.string().email("Email no válido").max(255),
+          email: z.string().trim().toLowerCase().email("Email no válido").max(255),
           phone: z.preprocess(
             (val) =>
               val === "" || val === null || val === undefined ? null : val,
             z
               .string()
+              .trim()
               .min(10, "El teléfono debe tener al menos 10 caracteres")
               .max(20, "Teléfono demasiado largo")
               .regex(/^\+?[\d\s\-\(\)]+$/, "Formato de teléfono inválido")
@@ -149,6 +152,7 @@ export const PUT = requireAdmin(
           role: z.enum(["USER", "ADMIN", "VENDEDOR"]),
           password: z
             .string()
+            .trim()
             .min(8, "La contraseña debe tener al menos 8 caracteres")
             .regex(
               /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,

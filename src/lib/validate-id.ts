@@ -16,4 +16,3 @@ export function requireId(id: string): {
   }
   return { valid: true, error: null };
 }
-

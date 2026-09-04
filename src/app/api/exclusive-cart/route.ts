@@ -125,14 +125,17 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     }
 
     // Consultar disponibilidad de stock
-    const availableStock = exclusiveAccount.exclusiveStocks.length;
-    if (availableStock < quantity) {
-      return NextResponse.json(
-        {
-          error: `Stock insuficiente. Solo hay ${availableStock} unidades disponibles`,
-        },
-        { status: 400 },
-      );
+    // Si la entrega es por soporte, el stock es infinito
+    if (exclusiveAccount.deliveryMethod !== "SUPPORT") {
+      const availableStock = exclusiveAccount.exclusiveStocks.length;
+      if (availableStock < quantity) {
+        return NextResponse.json(
+          {
+            error: `Stock insuficiente. Solo hay ${availableStock} unidades disponibles`,
+          },
+          { status: 400 },
+        );
+      }
     }
 
     // Obtener o crear carrito
@@ -161,14 +164,17 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       // Cantidad de actualización
       const newQuantity = existingItem.quantity + quantity;
 
-      // Consultar stock nuevamente
-      if (availableStock < newQuantity) {
-        return NextResponse.json(
-          {
-            error: `Stock insuficiente. Solo hay ${availableStock} unidades disponibles`,
-          },
-          { status: 400 },
-        );
+      // Consultar stock nuevamente (solo si no es entrega por soporte)
+      if (exclusiveAccount.deliveryMethod !== "SUPPORT") {
+        const availableStock = exclusiveAccount.exclusiveStocks.length;
+        if (availableStock < newQuantity) {
+          return NextResponse.json(
+            {
+              error: `Stock insuficiente. Solo hay ${availableStock} unidades disponibles`,
+            },
+            { status: 400 },
+          );
+        }
       }
 
       const updatedItem = await db.cartItem.update({

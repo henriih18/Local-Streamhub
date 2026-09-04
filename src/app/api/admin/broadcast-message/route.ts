@@ -25,10 +25,12 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     const broadcastSchema = z.object({
       title: z
         .string()
+        .trim()
         .min(1, "El título es requerido")
         .max(200, "Título demasiado largo"),
       content: z
         .string()
+        .trim()
         .min(1, "El contenido es requerido")
         .max(10000, "Contenido demasiado largo"),
       type: z.enum(["GENERAL", "WARNING", "SYSTEM_NOTIFICATION"], {

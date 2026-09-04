@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
-import {
-  decryptInventoryCredentials,
-  decryptOrderCredentials,
-} from "@/lib/order-helper";
+import { decryptOrderCredentials } from "@/lib/order-helper";
 import { parseSafeEnum, parseSafeInt } from "@/lib/parse-safe";
 import { logger } from "@/lib/logger";
 
@@ -19,7 +16,7 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
       ["all", "renewed", "not_renewed"],
       "all",
     );
-    const paginated = searchParams.get("paginated") === "true";
+    const search = searchParams.get("search")?.trim() || "";
 
     // Construir filtro WHERE
     const where: any = {};
@@ -30,39 +27,46 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
       where.renewalCount = 0;
     }
 
-    const skip = paginated ? (page - 1) * limit : undefined;
-    const take = paginated ? limit : undefined;
+    // Búsqueda por ID de compra (no encriptado en la BD)
+    if (search) {
+      where.id = { contains: search.toLowerCase() };
+    }
 
-    const orders = await db.order.findMany({
-      where: paginated ? where : {},
-      include: {
-        user: {
-          select: {
-            email: true,
-            fullName: true,
+    const skip = (page - 1) * limit;
+
+    const [orders, totalOrders] = await Promise.all([
+      db.order.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              email: true,
+              fullName: true,
+            },
           },
-        },
-        streamingAccount: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            duration: true,
-            quality: true,
-            screens: true,
-            price: true,
+          streamingAccount: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              duration: true,
+              quality: true,
+              screens: true,
+              price: true,
+            },
           },
+          accountProfile: true,
+          accountStock: true,
+          exclusiveStock: true,
         },
-        accountProfile: true,
-        accountStock: true,
-        exclusiveStock: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      skip,
-      take,
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip,
+        take: limit,
+      }),
+      db.order.count({ where }),
+    ]);
 
     const decryptedOrders = orders.map((order) => {
       const decrypted = decryptOrderCredentials(order);
@@ -79,28 +83,21 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
       };
     });
 
-    // Si es paginado, devolver total y totalPages
-    if (paginated) {
-      const totalOrders = await db.order.count({ where });
-      const totalPages = Math.ceil(totalOrders / limit);
+    const totalPages = Math.ceil(totalOrders / limit);
 
-      return NextResponse.json({
-        success: true,
-        paginated: true,
-        data: {
-          orders: decryptedOrders,
-          pagination: {
-            page,
-            limit,
-            totalOrders,
-            totalPages,
-          },
+    return NextResponse.json({
+      success: true,
+      paginated: true,
+      data: {
+        orders: decryptedOrders,
+        pagination: {
+          page,
+          limit,
+          totalOrders,
+          totalPages,
         },
-      });
-    }
-
-    // Si NO es paginado, mantener la respuesta original
-    return NextResponse.json(decryptedOrders);
+      },
+    });
   } catch (error) {
     logger.error({ err: error }, "Error al recuperar los pedidos");
     return NextResponse.json(

@@ -87,31 +87,54 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
 
 export const POST = requireAdmin(async (request: NextRequest, user) => {
   try {
-    const expenseSchema = z.object({
-      name: z
-        .string()
-        .min(1, "El nombre es requerido")
-        .max(100, "Nombre demasiado largo"),
-      description: z
-        .string()
-        .max(500, "Descripción demasiado larga")
-        .optional()
-        .nullable(),
-      amount: z.coerce
-        .number()
-        .positive("El monto debe ser positivo")
-        .max(10000000, "Monto máximo 10,000,000"),
-      category: z
-        .string()
-        .min(1, "La categoría es requerida")
-        .max(50, "Categoría inválida"),
-      frequency: z.enum(["MENSUAL", "ANUAL", "UNICO"]).default("MENSUAL"),
-      dueDate: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato de fecha inválido (YYYY-MM-DD)")
-        .optional()
-        .nullable(),
-    });
+    const expenseSchema = z
+      .object({
+        name: z
+          .string()
+          .trim()
+          .min(1, "El nombre es requerido")
+          .max(100, "Nombre demasiado largo"),
+        description: z
+          .string()
+          .trim()
+          .max(500, "Descripción demasiado larga")
+          .optional()
+          .nullable(),
+        amount: z.coerce
+          .number()
+          .positive("El monto debe ser positivo")
+          .max(10000000, "Monto máximo 10,000,000"),
+        category: z
+          .string()
+          .trim()
+          .min(1, "La categoría es requerida")
+          .max(50, "Categoría inválida"),
+        frequency: z.enum(["MENSUAL", "ANUAL", "UNICO"]).default("MENSUAL"),
+        dueDate: z
+          .string()
+          .regex(
+            /^\d{4}-\d{2}-\d{2}$/,
+            "Formato de fecha inválido (YYYY-MM-DD)",
+          )
+          .optional()
+          .nullable(),
+      })
+      .refine(
+        (data) => {
+          // Si es único, la fecha de vencimiento NO puede estar vacía ni ser null
+          if (
+            data.frequency === "UNICO" &&
+            (!data.dueDate || data.dueDate.trim() === "")
+          ) {
+            return false;
+          }
+          return true;
+        },
+        {
+          message: "La fecha de vencimiento es obligatoria para gastos únicos",
+          path: ["dueDate"],
+        },
+      );
 
     const body = await request.json();
     const validation = expenseSchema.safeParse(body);

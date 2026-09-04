@@ -26,6 +26,7 @@ interface StreamingAccount {
   saleType: "FULL" | "PROFILES";
   maxProfiles?: number;
   pricePerProfile?: number;
+  deliveryMethod?: "AUTOMATIC" | "SUPPORT";
   streamingType?: {
     icon?: string;
     color?: string;
@@ -41,6 +42,7 @@ interface CartItem {
     description: string;
     price: number;
     saleType: "FULL" | "PROFILES";
+    deliveryMethod?: "AUTOMATIC" | "SUPPORT";
     exclusiveStocks?: Array<{
       id: string;
       isAvailable: boolean;
@@ -267,11 +269,20 @@ export function CartSidebar({
                           value={item.quantity}
                           onChange={(value) => onUpdateQuantity(item.id, value)}
                           min={1}
-                          max={item.availableStock || 99}
+                          max={
+                            item.streamingAccount?.deliveryMethod ===
+                              "SUPPORT" ||
+                            item.exclusiveAccount?.deliveryMethod === "SUPPORT"
+                              ? 1
+                              : item.availableStock || 99
+                          }
                           size="sm"
                         />
                         {item.availableStock !== undefined &&
-                          item.availableStock <= 5 && (
+                          item.availableStock <= 5 &&
+                          item.streamingAccount?.deliveryMethod !== "SUPPORT" &&
+                          item.exclusiveAccount?.deliveryMethod !==
+                            "SUPPORT" && (
                             <div className="text-xs text-orange-400">
                               {item.availableStock === 0
                                 ? "Sin stock"

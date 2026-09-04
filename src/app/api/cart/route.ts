@@ -148,20 +148,23 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       const newQuantity = existingItem.quantity + (quantity || 1);
 
       // Consultar la disponibilidad de stock ANTES de actualizar
-      const availableStock =
-        saleType === "PROFILES"
-          ? streamingAccount.profileStocks?.length || 0
-          : streamingAccount.accountStocks?.length || 0;
+      // Si la entrega es por soporte, el stock es infinito
+      if (streamingAccount.deliveryMethod !== "SUPPORT") {
+        const availableStock =
+          saleType === "PROFILES"
+            ? streamingAccount.profileStocks?.length || 0
+            : streamingAccount.accountStocks?.length || 0;
 
-      if (availableStock < newQuantity) {
-        return NextResponse.json(
-          {
-            error: `Stock insuficiente. Solo hay ${availableStock} unidad${
-              availableStock !== 1 ? "es" : ""
-            } disponible${availableStock !== 1 ? "s" : ""}.`,
-          },
-          { status: 400 },
-        );
+        if (availableStock < newQuantity) {
+          return NextResponse.json(
+            {
+              error: `Stock insuficiente. Solo hay ${availableStock} unidad${
+                availableStock !== 1 ? "es" : ""
+              } disponible${availableStock !== 1 ? "s" : ""}.`,
+            },
+            { status: 400 },
+          );
+        }
       }
 
       // Cantidad de actualización
@@ -175,20 +178,23 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 
       return NextResponse.json(updatedItem);
     } else {
-      const availableStock =
-        saleType === "PROFILES"
-          ? streamingAccount.profileStocks?.length || 0
-          : streamingAccount.accountStocks?.length || 0;
+      // Si la entrega es por soporte, el stock es infinito
+      if (streamingAccount.deliveryMethod !== "SUPPORT") {
+        const availableStock =
+          saleType === "PROFILES"
+            ? streamingAccount.profileStocks?.length || 0
+            : streamingAccount.accountStocks?.length || 0;
 
-      if (availableStock < (quantity || 1)) {
-        return NextResponse.json(
-          {
-            error: `Stock insuficiente. Solo hay ${availableStock} unidad${
-              availableStock !== 1 ? "es" : ""
-            } disponible${availableStock !== 1 ? "s" : ""}.`,
-          },
-          { status: 400 },
-        );
+        if (availableStock < (quantity || 1)) {
+          return NextResponse.json(
+            {
+              error: `Stock insuficiente. Solo hay ${availableStock} unidad${
+                availableStock !== 1 ? "es" : ""
+              } disponible${availableStock !== 1 ? "s" : ""}.`,
+            },
+            { status: 400 },
+          );
+        }
       }
 
       let finalPriceAtTime: number;

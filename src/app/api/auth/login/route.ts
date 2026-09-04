@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
       //country: user.country,
       credits: user.credits,
       avatar: user.avatar,
-      //phone: user.phone,
+      phone: user.phone,
       lastLogin: user.lastLogin,
       createdAt: user.createdAt,
     };

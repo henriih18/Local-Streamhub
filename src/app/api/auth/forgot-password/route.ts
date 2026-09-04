@@ -10,6 +10,8 @@ const forgotPasswordSchema = z
   .object({
     email: z
       .string()
+      .trim()
+      .toLowerCase()
       .email("Email no válido")
       .max(255, "El email no puede exceder 255 caracteres"),
   })

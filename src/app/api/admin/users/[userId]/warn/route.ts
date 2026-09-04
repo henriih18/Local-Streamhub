@@ -48,10 +48,12 @@ export const POST = requireAdmin(
       const warnSchema = z.object({
         message: z
           .string()
+          .trim()
           .min(1, "El mensaje es requerido")
           .max(1000, "Mensaje demasiado largo"),
         reason: z
           .string()
+          .trim()
           .min(1, "La razón es requerida")
           .max(500, "Razón demasiado larga"),
         severity: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),

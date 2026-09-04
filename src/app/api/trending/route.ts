@@ -99,7 +99,7 @@ async function fetchFromTMDB(): Promise<TrendingItem[]> {
 
   const filtered = items
     .filter((item) => item.poster_path !== null)
-    .slice(0, 15);
+    .slice(0, 20);
 
   // Obtener proveedores en paralelo
   const providerResults = await Promise.all(

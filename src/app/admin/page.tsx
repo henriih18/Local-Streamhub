@@ -5337,7 +5337,7 @@ export default function AdminPage() {
                                 </div>
                               </div>
                               <p className="text-sm text-slate-400 mb-1 break-all">
-                                {user.name || user.username}
+                                {user.id}
                               </p>
                               <p className="text-xs text-slate-500">
                                 Registrado:{" "}
@@ -7991,16 +7991,16 @@ export default function AdminPage() {
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700">
                       <SelectItem value="1 mes" className="text-white">
-                        1 mes
+                        1 Mes
                       </SelectItem>
                       <SelectItem value="2 meses" className="text-white">
                         2 Meses
                       </SelectItem>
                       <SelectItem value="3 meses" className="text-white">
-                        3 meses
+                        3 Meses
                       </SelectItem>
                       <SelectItem value="6 meses" className="text-white">
-                        6 meses
+                        6 Meses
                       </SelectItem>
                       <SelectItem value="1 año" className="text-white">
                         1 Año

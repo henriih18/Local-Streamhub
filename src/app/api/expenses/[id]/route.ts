@@ -20,19 +20,37 @@ export const PUT = requireAdmin(
         return NextResponse.json({ error: idCheck.error }, { status: 400 });
       }
 
-      const updateExpenseSchema = z.object({
-        name: z.string().min(1).max(100).optional(),
-        description: z.string().max(500).optional().optional(),
-        amount: z.coerce.number().positive().optional(),
-        category: z.string().min(1).max(50).optional(),
-        frequency: z.enum(["MENSUAL", "ANUAL", "UNICO"]).optional(),
-        dueDate: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/)
-          .optional()
-          .nullable(),
-        isActive: z.boolean().optional(),
-      });
+      const updateExpenseSchema = z
+        .object({
+          name: z.string().trim().min(1).max(100).optional(),
+          description: z.string().trim().max(500).optional().optional(),
+          amount: z.coerce.number().positive().optional(),
+          category: z.string().trim().min(1).max(50).optional(),
+          frequency: z.enum(["MENSUAL", "ANUAL", "UNICO"]).optional(),
+          dueDate: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional()
+            .nullable(),
+          isActive: z.boolean().optional(),
+        })
+        .refine(
+          (data) => {
+            // Si es único, la fecha de vencimiento NO puede estar vacía ni ser null
+            if (
+              data.frequency === "UNICO" &&
+              (!data.dueDate || data.dueDate.trim() === "")
+            ) {
+              return false;
+            }
+            return true;
+          },
+          {
+            message:
+              "La fecha de vencimiento es obligatoria para gastos únicos",
+            path: ["dueDate"],
+          },
+        );
 
       const body = await request.json();
       const validation = updateExpenseSchema.safeParse(body);

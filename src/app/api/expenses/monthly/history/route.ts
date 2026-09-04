@@ -34,11 +34,13 @@ export const GET = requireAdmin(async (request: NextRequest) => {
       (sum, record) => sum + record.profits,
       0,
     );
-    const averageProfitMargin =
+    /* const averageProfitMargin =
       monthlyHistory.length > 0
         ? monthlyHistory.reduce((sum, record) => sum + record.profitMargin, 0) /
           monthlyHistory.length
-        : 0;
+        : 0; */
+    const averageProfitMargin =
+      totalRevenue > 0 ? (totalProfits / totalRevenue) * 100 : 0;
 
     // Agrupar por año para resúmenes anuales
     const yearlySummary = monthlyHistory.reduce(
@@ -75,11 +77,15 @@ export const GET = requireAdmin(async (request: NextRequest) => {
       );
       summary.averageMonthlyProfit =
         summary.totalProfits / summary.months.length;
-      summary.averageProfitMargin =
+      /* summary.averageProfitMargin =
         summary.months.reduce(
           (sum: number, month: any) => sum + month.profitMargin,
           0,
-        ) / summary.months.length;
+        ) / summary.months.length; */
+      summary.averageProfitMargin =
+        summary.totalRevenue > 0
+          ? (summary.totalProfits / summary.totalRevenue) * 100
+          : 0;
     });
 
     // Obtener los años disponibles para filtrar

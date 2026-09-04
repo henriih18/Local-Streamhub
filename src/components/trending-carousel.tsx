@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { motion } from "framer-motion";
 import {
@@ -35,7 +35,7 @@ export function TrendingCarousel() {
   const [items, setItems] = useState<TrendingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<TrendingItem | null>(null);
-  const [emblaRef, emblaApi] = useEmblaCarousel(
+  /* const [emblaRef, emblaApi] = useEmblaCarousel(
     {
       loop: true,
       align: "start",
@@ -50,6 +50,26 @@ export function TrendingCarousel() {
         stopOnMouseEnter: true,
       }),
     ],
+  ); */
+
+  const autoplayRef = useRef(
+    Autoplay({
+      delay: 4000,
+      /* stopOnInteraction: true, */
+      stopOnInteraction: false,
+      stopOnMouseEnter: true,
+    }),
+  );
+
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    {
+      loop: true,
+      align: "start",
+      slidesToScroll: 2,
+      skipSnaps: false,
+      dragFree: true,
+    },
+    [autoplayRef.current],
   );
 
   useEffect(() => {
@@ -68,6 +88,24 @@ export function TrendingCarousel() {
     }
     fetchTrending();
   }, []);
+
+  // Reinitialize carousel when modal opens/closes to fix intermittent layout shifts
+  useEffect(() => {
+    if (emblaApi) {
+      // Al cerrar el modal, espera a que termine la animación de salida (200ms)
+      // y la barra de scroll del navegador se restaure antes de recalcular.
+      // Al abrir, recalcula inmediatamente (0ms).
+      const delay = selectedItem ? 0 : 250;
+
+      const timer = setTimeout(() => {
+        emblaApi.reInit();
+        // Reiniciar el autoplay después del reInit
+        autoplayRef.current.play();
+      }, delay);
+
+      return () => clearTimeout(timer);
+    }
+  }, [selectedItem, emblaApi]);
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();

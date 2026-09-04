@@ -493,6 +493,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
             message = `👑✨ *¡COMPRA EXCLUSIVA EXITOSA!* ✨👑\n\n`;
             message += `💎 *${escapeMarkdown(serviceName)}*\n`;
             message += `🌟 *Cuenta Exclusiva* — ${accountType}\n`;
+            message += `🆔 *ID de compra:* \`${order.id}\`\n\n`;
             message += `╔══════════════════════╗\n`;
             message += `  📧 *Email:* ${escapeMarkdown(email)}\n`;
             message += `  🔑 *Contraseña:* ${escapeMarkdown(password)}\n`;
@@ -514,6 +515,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
             message = `🎉 *¡Compra exitosa!*\n\n`;
             message += `📺 *${escapeMarkdown(serviceName)}*\n`;
             message += `📦 Tipo: ${accountType}\n`;
+            message += `🆔 *ID de compra:* \`${order.id}\`\n\n`;
             message += `─────────────────────\n`;
             message += `📧 *Email:* ${escapeMarkdown(email)}\n`;
             message += `🔑 *Contraseña:* ${escapeMarkdown(password)}\n`;

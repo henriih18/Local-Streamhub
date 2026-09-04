@@ -40,6 +40,7 @@ export const POST = requireAdmin(async (request: NextRequest) => {
     const announcementSchema = z.object({
       text: z
         .string()
+        .trim()
         .min(1, "El texto es requerido")
         .max(500, "Texto demasiado largo"),
       isActive: z.boolean().default(true),

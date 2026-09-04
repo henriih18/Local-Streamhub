@@ -102,6 +102,14 @@ interface SupportContact {
   order: number;
 }
 
+const formatPhoneDisplay = (phone: string): string => {
+  if (/^57\d{10}$/.test(phone)) {
+    const local = phone.slice(2);
+    return `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+  }
+  return phone;
+};
+
 export default function AccountPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -244,6 +252,7 @@ export default function AccountPage() {
         const data = await response.json();
         setUser((prevUser: any) => {
           if (!prevUser) return prevUser;
+          if (prevUser.credits === data.credits) return prevUser;
           const updatedUser = { ...prevUser, credits: data.credits };
           localStorage.setItem("user", JSON.stringify(updatedUser));
           return updatedUser;
@@ -259,6 +268,7 @@ export default function AccountPage() {
     onCreditsUpdated: (creditsData) => {
       setUser((prevUser: any) => {
         if (!prevUser) return prevUser;
+        if (prevUser.credits === creditsData.newCredits) return prevUser;
         const updatedUser = { ...prevUser, credits: creditsData.newCredits };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         return updatedUser;
@@ -269,6 +279,10 @@ export default function AccountPage() {
     onUserUpdate: (data) => {
       setUser((prevUser: any) => {
         if (!prevUser) return prevUser;
+        const hasChanges = Object.keys(data).some(
+          (key) => (prevUser as any)[key] !== (data as any)[key],
+        );
+        if (!hasChanges) return prevUser;
         const updatedUser = { ...prevUser, ...data };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         return updatedUser;
@@ -409,8 +423,11 @@ export default function AccountPage() {
                     {user.phone && (
                       <div className="flex items-center gap-2 text-slate-400">
                         <Phone className="w-4 h-4 flex-shrink-0" />
-                        <span className="text-sm break-all" title={user.phone}>
-                          {user.phone}
+                        <span
+                          className="text-sm break-all"
+                          title={formatPhoneDisplay(user.phone)}
+                        >
+                          {formatPhoneDisplay(user.phone)}
                         </span>
                       </div>
                     )}

@@ -94,10 +94,12 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     const createStreamingAccountSchema = z.object({
       name: z
         .string()
+        .trim()
         .min(1, "El nombre es requerido")
         .max(100, "Nombre demasiado largo"),
       description: z
         .string()
+        .trim()
         .min(1, "La descripción es requerida")
         .max(1000, "Descripción demasiado larga"),
       type: z.string().min(1, "El tipo es requerido"),

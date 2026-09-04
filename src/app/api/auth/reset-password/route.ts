@@ -8,11 +8,7 @@ import { logger } from "@/lib/logger";
 
 const resetPasswordSchema = z
   .object({
-    token: z
-      .string()
-      .trim()
-      .min(64, "Token inválido")
-      .max(64, "Token inválido"),
+    token: z.string().trim().min(64, "Token inválido").max(64, "Token inválido"),
     password: z
       .string()
       .trim()

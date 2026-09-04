@@ -71,7 +71,7 @@ async function createCustomServer() {
     // Configurar Socket.IO
     const allowedOrigins =
       process.env.NODE_ENV === "production"
-        ? ["https://riyostream.com"]
+        ? ["https://riyostream.com", "https://www.riyostream.com"]
         : ["http://localhost:3000"];
 
     const io = new Server(server, {

@@ -68,7 +68,7 @@ export const GET = requireAdmin(async (request: NextRequest) => {
       where: {
         isActive: true,
         frequency: "UNICO",
-        createdAt: {
+        dueDate: {
           gte: monthStart,
           lte: monthEnd,
         },

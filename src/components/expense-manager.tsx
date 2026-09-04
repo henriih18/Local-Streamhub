@@ -646,12 +646,13 @@ export function ExpenseManager({ isOpen, onClose }: ExpenseManagerProps) {
                     id="edit-amount"
                     type="number"
                     value={editingExpense.amount}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const value = e.target.value;
                       setEditingExpense({
                         ...editingExpense,
-                        amount: parseFloat(e.target.value),
-                      })
-                    }
+                        amount: value === "" ? 0 : parseFloat(value), // Evita NaN
+                      });
+                    }}
                     className="bg-gray-800 border-gray-600"
                   />
                 </div>

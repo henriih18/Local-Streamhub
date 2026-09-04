@@ -57,10 +57,12 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     const createStreamingTypeSchema = z.object({
       name: z
         .string()
+        .trim()
         .min(1, "El nombre es obligatorio")
         .max(50, "Nombre demasiado largo"),
       description: z
         .string()
+        .trim()
         .max(200, "Descripción demasiado larga")
         .optional(),
       color: z.string().max(20, "Color inválido").optional().default("#3B82F6"),

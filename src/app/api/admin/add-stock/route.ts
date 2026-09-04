@@ -203,7 +203,6 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       });
     }
 
-
     return NextResponse.json({
       success: true,
       message: `Se agregaron ${results.length} artículos al inventario`,

@@ -37,29 +37,41 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copiar package.json y prisma
-COPY package*.json ./
-COPY prisma ./prisma/
+# 1. Crear usuario primero
+RUN groupadd --gid 1001 appgroup && \
+    useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser
+
+# 2. Crear directorio de uploads y dar permisos SOLO a esa carpeta (INSTANTÁNEO)
+# Ya NO hacemos chown -R /app, solo a la carpeta que necesita escritura
+RUN mkdir -p /app/uploads && \
+    chown -R 1001:1001 /app/uploads
+
+# 3. Copiar package.json y prisma (usando --chown para que ya queden con el dueño correcto)
+COPY --chown=1001:1001 package*.json ./
+COPY --chown=1001:1001 prisma ./prisma/
 
 # Instalar SOLO dependencias de producción (tsx está en dependencies)
 RUN npm ci --omit=dev && \
     npx prisma generate
 
-# Copiar archivos necesarios
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/next.config.ts ./
-
+# 4. Copiar archivos necesarios (usando --chown en CADA COPY)
+# Al usar --chown aquí, NO necesitas el chown -R lento del final
+COPY --chown=1001:1001 --from=builder /app/.next ./.next
+COPY --chown=1001:1001 --from=builder /app/public ./public
+COPY --chown=1001:1001 --from=builder /app/src ./src
+COPY --chown=1001:1001 --from=builder /app/next.config.ts ./
 
 # Copiar server.ts DIRECTAMENTE (sin compilar)
-COPY --from=builder /app/server.ts ./server.ts
+COPY --chown=1001:1001 --from=builder /app/server.ts ./server.ts
 
 # Copiar tsconfig.json para que tsx funcione correctamente
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --chown=1001:1001 --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Exponer puerto
 EXPOSE 3000
+
+# Cambiar a usuario no-root
+USER 1001
 
 # Ejecutar con tsx (se usa igual que en desarrollo)
 CMD ["npx", "tsx", "server.ts"]

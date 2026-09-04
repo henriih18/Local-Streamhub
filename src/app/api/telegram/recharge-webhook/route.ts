@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
         `\n\n` +
         `2️⃣ 📸 Envía aquí la *foto del comprobante* de la transferencia.\n` +
         `3️⃣ 📧 Escribe el *correo electrónico* de tu cuenta RiyoStream.\n\n` +
-        `✅ Un agente verificará tu pago y te abonará los créditos en breve.`,
+        `✅ Un agente verificará tu pago y te abonará los créditos en breve.`
     );
 
     return NextResponse.json({ ok: true });

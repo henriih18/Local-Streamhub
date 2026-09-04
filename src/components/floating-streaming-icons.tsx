@@ -3,7 +3,7 @@
 // Importaciones
 import {
   FaAmazon,
-  FaApple,
+  
   FaSpotify,
   FaYoutube,
 } from "react-icons/fa";
@@ -14,8 +14,10 @@ import {
   SiCrunchyroll,
   SiPlex,
   SiCanvas,
+  SiAppletv,
 } from "react-icons/si";
-import { TbBrandDisney } from "react-icons/tb";
+import { TbBrandDisney, TbMovie } from "react-icons/tb";
+import { ImTv } from "react-icons/im"
 import { IconType } from "react-icons";
 
 const STREAMING_SERVICES: Array<{
@@ -25,16 +27,17 @@ const STREAMING_SERVICES: Array<{
   color: string;
 }> = [
   { id: "netflix", name: "Netflix", icon: SiNetflix, color: "#E50914" },
-  { id: "amazon", name: "Amazon Prime", icon: FaAmazon, color: "#FF9900" },
   { id: "hbo", name: "HBO Max", icon: SiHbo, color: "#5822B4" },
   { id: "disney", name: "Disney+", icon: TbBrandDisney, color: "#113CCF" },
-  { id: "apple", name: "Apple TV+", icon: FaApple, color: "#555555" },
-  { id: "spotify", name: "Spotify", icon: FaSpotify, color: "#1DB954" },
-  { id: "youtube", name: "YouTube", icon: FaYoutube, color: "#FF0000" },
-  { id: "paramount", name: "Paramount+", icon: SiParamountplus, color: "#0066FF" },
+  { id: "apple", name: "Apple TV+", icon: SiAppletv, color: "#555555" },
   { id: "crunchyroll", name: "Crunchyroll", icon: SiCrunchyroll, color: "#F47521" },
-  { id: "plex", name: "Plex", icon: SiPlex, color: "#E5A00D" },
   { id: "canvas", name: "Canvas", icon: SiCanvas, color: "#0077C8" },
+  { id: "amazon", name: "Amazon Prime", icon: FaAmazon, color: "#FF9900" },
+  { id: "plex", name: "Plex", icon: SiPlex, color: "#E5A00D" },
+  { id: "paramount", name: "Paramount+", icon: SiParamountplus, color: "#0066FF" },
+  { id: "youtube", name: "YouTube", icon: FaYoutube, color: "#FF0000" },
+  { id: "iptv", name: "Iptv", icon: ImTv, color: "#361DD0" },
+  { id: "spotify", name: "Spotify", icon: FaSpotify, color: "#1DB954" },
 ];
 
 export function FloatingStreamingIcons() {
@@ -69,7 +72,7 @@ export function FloatingStreamingIcons() {
 
           // Tamaño (entre 20 y 40 px)
           const size = 20 + ((i * 9) % 20);
-          const delay = i * 0.5;
+          const delay = i * 0.1;
           const duration = 35 + ((i * 7) % 15);
 
           return (
@@ -110,10 +113,10 @@ export function FloatingStreamingIcons() {
             transform: translate(10vw, -5vh) rotate(8deg) scale(1);
           }
           40% {
-            transform: translate(-15vw, 5vh) rotate(-5deg) scale(1);
+            transform: translate(-15vw, 10vh) rotate(-5deg) scale(1);
           }
           60% {
-            transform: translate(5vw, 10vh) rotate(12deg) scale(1);
+            transform: translate(7vw, 10vh) rotate(12deg) scale(1);
           }
           80% {
             transform: translate(-5vw, -10vh) rotate(-8deg) scale(1);

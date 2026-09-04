@@ -42,8 +42,8 @@ export const PUT = requireAdmin(
       }
 
       const updateExclusiveAccountSchema = z.object({
-        title: z.string().max(100).optional(),
-        description: z.string().max(1000).optional(),
+        title: z.string().trim().max(100).optional(),
+        description: z.string().trim().max(1000).optional(),
         type: z.string().max(50).optional(),
         price: z.coerce.number().positive().optional(),
         duration: z.string().optional(),
@@ -85,6 +85,7 @@ export const PUT = requireAdmin(
           ...(data.type && { type: sanitizeInput(data.type) }),
           ...(data.price !== undefined && {
             price: data.price,
+            
           }),
           ...(data.duration !== undefined && {
             duration: data.duration,

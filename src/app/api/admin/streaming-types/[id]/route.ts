@@ -45,7 +45,7 @@ export const PUT = requireAdmin(
       }
 
       const updateStreamingTypeSchema = z.object({
-        name: z.string().min(1).max(50).optional(),
+        name: z.string().trim().min(1).max(50).optional(),
         /* description: z.string().max(200).optional(), */
         color: z.string().max(20).optional(),
         imageUrl: z.preprocess(

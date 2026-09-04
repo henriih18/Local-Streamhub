@@ -47,6 +47,7 @@ export const POST = requireAdmin(
       const unblockSchema = z.object({
         reason: z
           .string()
+          .trim()
           .min(1, "El motivo es requerido")
           .max(500, "Motivo demasiado largo"),
         notifyUser: z.boolean().default(false),

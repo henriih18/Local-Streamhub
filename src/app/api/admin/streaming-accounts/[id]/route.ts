@@ -45,8 +45,8 @@ export const PUT = requireAdmin(
       }
 
       const updateStreamingAccountSchema = z.object({
-        name: z.string().min(1).max(100).optional(),
-        description: z.string().min(1).max(1000).optional(),
+        name: z.string().trim().min(1).max(100).optional(),
+        description: z.string().trim().min(1).max(1000).optional(),
         price: z.coerce.number().positive().optional(),
         type: z.string().min(1).max(50).optional(),
         duration: z.string().min(1).max(50).optional(),
