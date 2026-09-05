@@ -135,7 +135,12 @@ export const PUT = requireAdmin(
               /^[a-zA-Z0-9_]+$/,
               "Solo se permiten letras, números y guiones bajos",
             ),
-          email: z.string().trim().toLowerCase().email("Email no válido").max(255),
+          email: z
+            .string()
+            .trim()
+            .toLowerCase()
+            .email("Email no válido")
+            .max(255),
           phone: z.preprocess(
             (val) =>
               val === "" || val === null || val === undefined ? null : val,
@@ -150,6 +155,8 @@ export const PUT = requireAdmin(
           ),
           credits: z.coerce.number().min(0).max(1000000).optional(),
           role: z.enum(["USER", "ADMIN", "VENDEDOR"]),
+          trialDays: z.number().int().min(1).max(90).optional().nullable(),
+          trialQuota: z.number().int().min(1).max(1000).optional().nullable(),
           password: z
             .string()
             .trim()
@@ -187,7 +194,7 @@ export const PUT = requireAdmin(
         );
       }
 
-      const { fullName, username, email, phone, credits, role, password } =
+      const { fullName, username, email, phone, credits, role, password, trialDays, trialQuota } =
         validation.data;
 
       // Compruebe si el usuario existe
@@ -264,6 +271,22 @@ export const PUT = requireAdmin(
         role,
         updatedAt: new Date(),
       };
+
+      // === Período de prueba para vendedores ===
+      if (role === "VENDEDOR") {
+        if (trialDays && trialDays > 0) {
+          const trialEnd = new Date();
+          trialEnd.setDate(trialEnd.getDate() + trialDays);
+          updateData.vendorTrialEndsAt = trialEnd;
+          updateData.vendorTrialQuota = trialQuota || 5;
+        } else if (trialDays === null) {
+          updateData.vendorTrialEndsAt = null;
+          updateData.vendorTrialQuota = null;
+        }
+      } else {
+        updateData.vendorTrialEndsAt = null;
+        updateData.vendorTrialQuota = null;
+      }
 
       // Agregue una contraseña para actualizar si se proporciona
       if (password) {

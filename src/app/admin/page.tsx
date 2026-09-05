@@ -100,6 +100,7 @@ import {
   X,
   Percent,
   Save,
+  Clock,
 } from "lucide-react";
 import { ProfitsCard } from "@/components/profits-card";
 
@@ -2329,6 +2330,14 @@ export default function AdminPage() {
             role: registrationInfo.role || "USER",
             password: registrationInfo.password || undefined,
             confirmPassword: registrationInfo.confirmPassword || undefined,
+            trialDays:
+              userRegistrationData[user.id]?.role === "VENDEDOR"
+                ? userRegistrationData[user.id]?.trialDays
+                : null,
+            trialQuota:
+              userRegistrationData[user.id]?.role === "VENDEDOR"
+                ? userRegistrationData[user.id]?.trialQuota
+                : null,
           }),
         },
       );
@@ -5842,43 +5851,202 @@ export default function AdminPage() {
                                       Rol
                                     </Label>
                                     {editingUserRegistration === user.id ? (
-                                      <Select
-                                        value={
-                                          userRegistrationData[user.id]?.role ||
-                                          "USER"
-                                        }
-                                        onValueChange={(value) =>
-                                          handleRegistrationInputChange(
-                                            user.id,
-                                            "role",
-                                            value,
-                                          )
-                                        }
-                                      >
-                                        <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                                          <SelectValue placeholder="Seleccionar rol" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-slate-800 border-slate-700">
-                                          <SelectItem
-                                            value="USER"
-                                            className="text-white"
-                                          >
-                                            Usuario
-                                          </SelectItem>
-                                          <SelectItem
-                                            value="VENDEDOR"
-                                            className="text-white"
-                                          >
-                                            Vendedor
-                                          </SelectItem>
-                                          <SelectItem
-                                            value="ADMIN"
-                                            className="text-white"
-                                          >
-                                            Administrador
-                                          </SelectItem>
-                                        </SelectContent>
-                                      </Select>
+                                      <>
+                                        <Select
+                                          value={
+                                            userRegistrationData[user.id]
+                                              ?.role || "USER"
+                                          }
+                                          onValueChange={(value) =>
+                                            handleRegistrationInputChange(
+                                              user.id,
+                                              "role",
+                                              value,
+                                            )
+                                          }
+                                        >
+                                          <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                                            <SelectValue placeholder="Seleccionar rol" />
+                                          </SelectTrigger>
+                                          <SelectContent className="bg-slate-800 border-slate-700">
+                                            <SelectItem
+                                              value="USER"
+                                              className="text-white"
+                                            >
+                                              Usuario
+                                            </SelectItem>
+                                            <SelectItem
+                                              value="VENDEDOR"
+                                              className="text-white"
+                                            >
+                                              Vendedor
+                                            </SelectItem>
+                                            <SelectItem
+                                              value="ADMIN"
+                                              className="text-white"
+                                            >
+                                              Administrador
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
+
+                                        {userRegistrationData[user.id]?.role ===
+                                          "VENDEDOR" && (
+                                          <div className="mt-2 p-3 bg-amber-900/20 border border-amber-700/50 rounded-lg space-y-3">
+                                            <div className="flex items-center gap-2 text-xs text-amber-200">
+                                              <Clock className="h-3 w-3" />
+                                              <span className="font-semibold">
+                                                Período de prueba
+                                              </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-2">
+                                              {/* Días de prueba */}
+                                              <div>
+                                                <label className="text-xs text-gray-400 mb-1 block">
+                                                  Días
+                                                </label>
+                                                <Select
+                                                  value={
+                                                    userRegistrationData[
+                                                      user.id
+                                                    ]?.trialDays
+                                                      ? userRegistrationData[
+                                                          user.id
+                                                        ]?.trialDays.toString()
+                                                      : ""
+                                                  }
+                                                  onValueChange={(value) =>
+                                                    handleRegistrationInputChange(
+                                                      user.id,
+                                                      "trialDays",
+                                                      value,
+                                                    )
+                                                  }
+                                                >
+                                                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white h-8 text-xs">
+                                                    <SelectValue placeholder="Días" />
+                                                  </SelectTrigger>
+                                                  <SelectContent className="bg-slate-800 border-slate-700">
+                                                    <SelectItem
+                                                      value="1"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      1 día
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                      value="15"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      15 días
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                      value="30"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      30 días
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                      value="60"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      60 días
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                      value="90"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      90 días
+                                                    </SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+
+                                              {/* Cuota mínima */}
+                                              <div>
+                                                <label className="text-xs text-gray-400 mb-1 block">
+                                                  Cuota
+                                                </label>
+                                                <Select
+                                                  value={
+                                                    userRegistrationData[
+                                                      user.id
+                                                    ]?.trialQuota
+                                                      ? userRegistrationData[
+                                                          user.id
+                                                        ]?.trialQuota.toString()
+                                                      : ""
+                                                  }
+                                                  onValueChange={(value) =>
+                                                    handleRegistrationInputChange(
+                                                      user.id,
+                                                      "trialQuota",
+                                                      value,
+                                                    )
+                                                  }
+                                                >
+                                                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white h-8 text-xs">
+                                                    <SelectValue placeholder="Cuentas" />
+                                                  </SelectTrigger>
+                                                  <SelectContent className="bg-slate-800 border-slate-700">
+                                                    <SelectItem
+                                                      value="3"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      3 cuentas
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                      value="5"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      5 cuentas
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                      value="10"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      10 cuentas
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                      value="20"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      20 cuentas
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                      value="50"
+                                                      className="text-white text-xs"
+                                                    >
+                                                      50 cuentas
+                                                    </SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            </div>
+
+                                            {userRegistrationData[user.id]
+                                              ?.trialDays &&
+                                              userRegistrationData[user.id]
+                                                ?.trialQuota && (
+                                                <p className="text-xs text-amber-300">
+                                                  Si no vende{" "}
+                                                  {
+                                                    userRegistrationData[
+                                                      user.id
+                                                    ]?.trialQuota
+                                                  }{" "}
+                                                  cuentas en{" "}
+                                                  {
+                                                    userRegistrationData[
+                                                      user.id
+                                                    ]?.trialDays
+                                                  }{" "}
+                                                  días, vuelve a ser Usuario.
+                                                </p>
+                                              )}
+                                          </div>
+                                        )}
+                                      </>
                                     ) : (
                                       <div className="flex items-center gap-2">
                                         <p className="text-white bg-slate-700/50 p-2 rounded flex-1">

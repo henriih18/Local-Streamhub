@@ -154,7 +154,7 @@ export function MonthlyHistoryModal({
     setExpandedYears(newExpanded);
   };
 
-  const exportToCSV = () => {
+  /* const exportToCSV = () => {
     if (!historyData) return;
 
     const csvContent = [
@@ -193,7 +193,7 @@ export function MonthlyHistoryModal({
     URL.revokeObjectURL(url);
 
     toast.success("Historial exportado exitosamente");
-  };
+  }; */
 
   const isCurrentMonth = (year: number, month: number) => {
     const now = new Date();
@@ -253,7 +253,7 @@ export function MonthlyHistoryModal({
               </Select>
             </div>
 
-            <Button
+            {/* <Button
               onClick={exportToCSV}
               variant="outline"
               size="sm"
@@ -261,7 +261,7 @@ export function MonthlyHistoryModal({
             >
               <Download className="h-4 w-4 mr-2" />
               Exportar CSV
-            </Button>
+            </Button> */}
           </div>
 
           {/* Tarjetas de resumen */}

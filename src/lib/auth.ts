@@ -58,13 +58,60 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
         role: true,
         isActive: true,
         isBlocked: true,
-        tokenVersion:true,
+        tokenVersion: true,
+        vendorTrialEndsAt: true,
+        vendorTrialQuota: true,
       },
     });
 
     if (!user) return { user: null, error: "Usuario no existe" };
     if (!user.isActive) return { user: null, error: "Cuenta inactiva" };
     if (user.isBlocked) return { user: null, error: "Cuenta bloqueada" };
+
+    // === Chequeo de trial de vendedor ===
+    if (
+      user.role === "VENDEDOR" &&
+      user.vendorTrialEndsAt &&
+      user.vendorTrialQuota
+    ) {
+      const now = new Date();
+      if (now > user.vendorTrialEndsAt) {
+        const totalVentas = await db.order.count({
+          where: {
+            userId: user.id,
+            status: "COMPLETED",
+            createdAt: { lte: user.vendorTrialEndsAt },
+          },
+        });
+
+        if (totalVentas < user.vendorTrialQuota) {
+          await db.user.update({
+            where: { id: user.id },
+            data: {
+              role: "USER",
+              vendorTrialEndsAt: null,
+              vendorTrialQuota: null,
+            },
+          });
+          return {
+            user: {
+              id: user.id,
+              email: user.email,
+              role: "USER",
+            },
+            error: `Tu período de prueba finalizó. Vendiste ${totalVentas} de ${user.vendorTrialQuota} cuentas requeridas.`,
+          };
+        } else {
+          await db.user.update({
+            where: { id: user.id },
+            data: {
+              vendorTrialEndsAt: null,
+              vendorTrialQuota: null,
+            },
+          });
+        }
+      }
+    }
 
     if ((payload as any).tokenVersion !== user.tokenVersion) {
       return { user: null, error: "Sesión revocada" };

@@ -110,14 +110,16 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
           .min(1, "La categoría es requerida")
           .max(50, "Categoría inválida"),
         frequency: z.enum(["MENSUAL", "ANUAL", "UNICO"]).default("MENSUAL"),
-        dueDate: z
-          .string()
-          .regex(
-            /^\d{4}-\d{2}-\d{2}$/,
-            "Formato de fecha inválido (YYYY-MM-DD)",
-          )
-          .optional()
-          .nullable(),
+        dueDate: z.preprocess(
+          (val) => (val === "" || val === null ? undefined : val),
+          z
+            .string()
+            .regex(
+              /^\d{4}-\d{2}-\d{2}$/,
+              "Formato de fecha inválido (YYYY-MM-DD)",
+            )
+            .optional(),
+        ),
       })
       .refine(
         (data) => {

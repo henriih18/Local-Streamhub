@@ -14,89 +14,68 @@ export const GET = requireAdmin(async (request: NextRequest) => {
       whereClause = { year: parseInt(year) };
     }
 
-    // Obtener historial de ganancias mensual
     const monthlyHistory = await db.monthlyProfit.findMany({
       where: whereClause,
       orderBy: [{ year: "desc" }, { month: "desc" }],
       take: limit,
     });
 
-    // Calcular totales y estadísticas
-    const totalRevenue = monthlyHistory.reduce(
-      (sum, record) => sum + record.revenue,
-      0,
-    );
+    const totalRevenue = monthlyHistory.reduce((sum, r) => sum + r.revenue, 0);
     const totalExpenses = monthlyHistory.reduce(
-      (sum, record) => sum + record.expenses,
+      (sum, r) => sum + r.expenses,
       0,
     );
-    const totalProfits = monthlyHistory.reduce(
-      (sum, record) => sum + record.profits,
-      0,
-    );
-    /* const averageProfitMargin =
-      monthlyHistory.length > 0
-        ? monthlyHistory.reduce((sum, record) => sum + record.profitMargin, 0) /
-          monthlyHistory.length
-        : 0; */
+    const totalProfits = monthlyHistory.reduce((sum, r) => sum + r.profits, 0);
     const averageProfitMargin =
       totalRevenue > 0 ? (totalProfits / totalRevenue) * 100 : 0;
 
-    // Agrupar por año para resúmenes anuales
+    // Resumen por año (uniqueUsers = promedio mensual, no suma, para no inflar)
     const yearlySummary = monthlyHistory.reduce(
       (acc, record) => {
-        const year = record.year;
-        if (!acc[year]) {
-          acc[year] = {
-            year,
+        const y = record.year;
+        if (!acc[y]) {
+          acc[y] = {
+            year: y,
             totalRevenue: 0,
             totalExpenses: 0,
             totalProfits: 0,
             totalRecharges: 0,
-            uniqueUsers: new Set(),
-            months: [],
+            sumUniqueUsers: 0,
+            monthCount: 0,
+            months: [] as any[],
           };
         }
-
-        acc[year].totalRevenue += record.revenue;
-        acc[year].totalExpenses += record.expenses;
-        acc[year].totalProfits += record.profits;
-        acc[year].totalRecharges += record.totalRecharges;
-        acc[year].months.push(record);
-
+        acc[y].totalRevenue += record.revenue;
+        acc[y].totalExpenses += record.expenses;
+        acc[y].totalProfits += record.profits;
+        acc[y].totalRecharges += record.totalRecharges;
+        acc[y].sumUniqueUsers += record.uniqueUsers;
+        acc[y].monthCount += 1;
+        acc[y].months.push(record);
         return acc;
       },
-      {} as Record<string, any>,
+      {} as Record<number, any>,
     );
 
-    // Convertir conjuntos en recuentos y calcular promedios
-    Object.values(yearlySummary).forEach((summary: any) => {
-      summary.uniqueUsers = summary.months.reduce(
-        (sum: number, month: any) => sum + month.uniqueUsers,
-        0,
-      );
-      summary.averageMonthlyProfit =
-        summary.totalProfits / summary.months.length;
-      /* summary.averageProfitMargin =
-        summary.months.reduce(
-          (sum: number, month: any) => sum + month.profitMargin,
-          0,
-        ) / summary.months.length; */
-      summary.averageProfitMargin =
-        summary.totalRevenue > 0
-          ? (summary.totalProfits / summary.totalRevenue) * 100
-          : 0;
-    });
+    const yearlySummaryArr = Object.values(yearlySummary)
+      .map((s: any) => ({
+        year: s.year,
+        totalRevenue: s.totalRevenue,
+        totalExpenses: s.totalExpenses,
+        totalProfits: s.totalProfits,
+        totalRecharges: s.totalRecharges,
+        uniqueUsers: Math.round(s.sumUniqueUsers / s.monthCount), // promedio
+        averageMonthlyProfit: s.totalProfits / s.monthCount,
+        averageProfitMargin:
+          s.totalRevenue > 0 ? (s.totalProfits / s.totalRevenue) * 100 : 0,
+        months: s.months,
+      }))
+      .sort((a: any, b: any) => b.year - a.year);
 
-    // Obtener los años disponibles para filtrar
     const availableYears = await db.monthlyProfit.findMany({
-      select: {
-        year: true,
-      },
+      select: { year: true },
       distinct: ["year"],
-      orderBy: {
-        year: "desc",
-      },
+      orderBy: { year: "desc" },
     });
 
     return NextResponse.json({
@@ -108,9 +87,7 @@ export const GET = requireAdmin(async (request: NextRequest) => {
         averageProfitMargin,
         totalMonths: monthlyHistory.length,
       },
-      yearlySummary: Object.values(yearlySummary).sort(
-        (a: any, b: any) => b.year - a.year,
-      ),
+      yearlySummary: yearlySummaryArr,
       availableYears: availableYears.map((y) => y.year),
       currentMonth: {
         year: new Date().getFullYear(),
