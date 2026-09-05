@@ -390,17 +390,17 @@ export const PUT = requireAdmin(
           let texto: string;
           if (tieneTrial) {
             texto =
-              `🎉 *¡Felicidades ${nombre}\\!*\n\n` +
-              `Tu cuenta ha sido promovida al rol *Vendedor* en RiyoStream\\.\n\n` +
+              `🎉 *¡Felicidades ${nombre}!*\n\n` +
+              `Tu cuenta ha sido promovida al rol *Vendedor* en RiyoStream.\n\n` +
               `Se te ha asignado un *período de prueba*:\n\n` +
               `⏰ *Fecha límite:* ${escapeMarkdown(fechaFin)}\n\n` +
-              `Si no cumples con las ventas requeridas antes de la fecha límite, tu cuenta volverá automáticamente al rol de Usuario\\.\n\n` +
-              `¡Mucho éxito\\! 💪`;
+              `Si no cumples con las ventas requeridas antes de la fecha límite, tu cuenta volverá automáticamente al rol de Usuario.\n\n` +
+              `¡Mucho éxito! 💪`;
           } else {
             texto =
-              `🎉 *¡Felicidades ${nombre}\\!*\n\n` +
-              `Tu cuenta ha sido promovida al rol *Vendedor* en RiyoStream\\.\n\n` +
-              `¡Mucho éxito\\! 💪`;
+              `🎉 *¡Felicidades ${nombre}!*\n\n` +
+              `Tu cuenta ha sido promovida al rol *Vendedor* en RiyoStream.\n\n` +
+              `¡Mucho éxito! 💪`;
           }
 
           await sendTelegramMessage(fullUser.telegramChatId, texto, {
@@ -436,3 +436,4 @@ export const PUT = requireAdmin(
     }
   },
 );
+

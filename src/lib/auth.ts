@@ -284,13 +284,13 @@ async function notifyVendorTrialResult(params: {
   }
 
   const tgText = aprobo
-    ? `🏆 *¡Felicitaciones\\! Has superado tu período de prueba*\n\n` +
+    ? `🏆 *¡Felicitaciones! Has superado tu período de prueba*\n\n` +
       `• Cuentas vendidas: *${totalVentas}*\n\n` +
-      `Tu rol de *Vendedor* es ahora permanente\\. ¡Sigue con el buen trabajo\\! 🎉`
+      `Tu rol de *Vendedor* es ahora permanente. ¡Sigue con el buen trabajo! 🎉`
     : `⏰ *Tu período de prueba ha finalizado*\n\n` +
       `• Cuentas vendidas: *${totalVentas}*\n\n` +
-      `Como no se alcanzó la cuota mínima\\, tu cuenta ha vuelto al rol de *Usuario*\\.\n\n` +
-      `Si deseas volver a ser Vendedor\\, contacta a soporte para una nueva evaluación\\.`;
+      `Como no se alcanzó la cuota mínima, tu cuenta ha vuelto al rol de *Usuario*.\n\n` +
+      `Si deseas volver a ser Vendedor, contacta a soporte para una nueva evaluación.`;
 
   const sent = await sendTelegramMessage(telegramChatId, tgText, {
     parse_mode: "Markdown",
