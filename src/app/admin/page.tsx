@@ -2331,12 +2331,12 @@ export default function AdminPage() {
             password: registrationInfo.password || undefined,
             confirmPassword: registrationInfo.confirmPassword || undefined,
             trialDays:
-              userRegistrationData[user.id]?.role === "VENDEDOR"
-                ? userRegistrationData[user.id]?.trialDays
+              registrationInfo.role === "VENDEDOR"
+                ? registrationInfo.trialDays
                 : null,
             trialQuota:
-              userRegistrationData[user.id]?.role === "VENDEDOR"
-                ? userRegistrationData[user.id]?.trialQuota
+              registrationInfo.role === "VENDEDOR"
+                ? registrationInfo.trialQuota
                 : null,
           }),
         },

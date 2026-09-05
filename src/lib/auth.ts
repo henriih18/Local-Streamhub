@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { jwtVerify, errors } from "jose";
 import { db } from "@/lib/db";
 import { logger } from "./logger";
+import { sendTelegramMessage } from "./telegram";
 
 function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
@@ -61,6 +62,7 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
         tokenVersion: true,
         vendorTrialEndsAt: true,
         vendorTrialQuota: true,
+        telegramChatId: true,
       },
     });
 
@@ -93,6 +95,18 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
               vendorTrialQuota: null,
             },
           });
+          await notifyVendorTrialResult({
+            userId: user.id,
+            telegramChatId: user.telegramChatId,
+            totalVentas,
+            trialQuota: user.vendorTrialQuota,
+            aprobo: false,
+          }).catch((notifyErr) => {
+            logger.error(
+              { err: notifyErr, context: "vendor_trial_failed_notify" },
+              "No se pudo notificar la expiracion del trial (no aprobo)",
+            );
+          });
           return {
             user: {
               id: user.id,
@@ -108,6 +122,18 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
               vendorTrialEndsAt: null,
               vendorTrialQuota: null,
             },
+          });
+          await notifyVendorTrialResult({
+            userId: user.id,
+            telegramChatId: user.telegramChatId,
+            totalVentas,
+            trialQuota: user.vendorTrialQuota,
+            aprobo: true,
+          }).catch((notifyErr) => {
+            logger.error(
+              { err: notifyErr, context: "vendor_trial_passed_notify" },
+              "No se pudo notificar la superacion del trial (aprobo)",
+            );
           });
         }
       }
@@ -189,4 +215,98 @@ export function optionalAuth(
     // Permitir acceso con o sin usuario
     return handler(req, user, context);
   };
+}
+
+// ============================================================
+//  Notificacion cuando vence el periodo de prueba de vendedores
+// ============================================================
+
+async function notifyVendorTrialResult(params: {
+  userId: string;
+  telegramChatId: string | null;
+  totalVentas: number;
+  trialQuota: number;
+  aprobo: boolean;
+}): Promise<void> {
+  const { userId, telegramChatId, totalVentas, trialQuota, aprobo } = params;
+
+  // --- 1. Mensaje in-app (tabla Message) ---
+
+  const title = aprobo
+    ? "¡Felicidades! Ahora eres Vendedor permanente"
+    : "Tu período de prueba como Vendedor ha finalizado";
+
+  const content = aprobo
+    ? `¡Felicitaciones! Has superado tu período de prueba como Vendedor.\n\n` +
+      `• Cuentas vendidas: ${totalVentas}\n\n` +
+      `Tu rol de Vendedor es ahora permanente. ¡Sigue con el buen trabajo!`
+    : `Tu período de prueba como Vendedor ha finalizado.\n\n` +
+      `• Cuentas vendidas: ${totalVentas}\n\n` +
+      `Como no se alcanzó la cuota mínima, tu cuenta ha vuelto al rol de Usuario.\n\n` +
+      `Si deseas volver a ser Vendedor, contacta a soporte para una nueva evaluación.`;
+
+  try {
+    const adminUser = await db.user.findFirst({
+      where: { role: "ADMIN" },
+      select: { id: true },
+    });
+    if (adminUser) {
+      await db.message.create({
+        data: {
+          senderId: adminUser.id,
+          receiverId: userId,
+          title,
+          content,
+          type: "SYSTEM_NOTIFICATION",
+          isRead: false,
+        },
+      });
+    }
+  } catch (err) {
+    logger.error(
+      { err, context: "vendor_trial_result_inapp" },
+      "No se pudo crear el mensaje in-app del resultado del trial",
+    );
+  }
+
+  // --- 2. Mensaje por Telegram (si tiene chatId vinculado) ---
+  if (!telegramChatId) {
+    logger.info(
+      {
+        context: "vendor_trial_result",
+        userId,
+        aprobo,
+        reason: "no_telegram_chat_id",
+      },
+      "Usuario sin telegramChatId; solo se notifico in-app",
+    );
+    return;
+  }
+
+  const tgText = aprobo
+    ? `🏆 *¡Felicitaciones\\! Has superado tu período de prueba*\n\n` +
+      `• Cuentas vendidas: *${totalVentas}*\n\n` +
+      `Tu rol de *Vendedor* es ahora permanente\\. ¡Sigue con el buen trabajo\\! 🎉`
+    : `⏰ *Tu período de prueba ha finalizado*\n\n` +
+      `• Cuentas vendidas: *${totalVentas}*\n\n` +
+      `Como no se alcanzó la cuota mínima\\, tu cuenta ha vuelto al rol de *Usuario*\\.\n\n` +
+      `Si deseas volver a ser Vendedor\\, contacta a soporte para una nueva evaluación\\.`;
+
+  const sent = await sendTelegramMessage(telegramChatId, tgText, {
+    parse_mode: "Markdown",
+  });
+
+  logger.info(
+    {
+      context: "vendor_trial_result",
+      userId,
+      aprobo,
+      sent,
+      totalVentas,
+      trialQuota,
+    },
+    aprobo
+      ? "Trial superado: notificacion de VENDEDOR permanente enviada"
+      : "Trial NO superado: notificacion de degradacion a USER enviada",
+  );
 }

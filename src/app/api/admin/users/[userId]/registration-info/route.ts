@@ -7,6 +7,7 @@ import { rateLimit } from "@/lib/rate-limiter";
 import { requireId } from "@/lib/validate-id";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { escapeMarkdown, sendTelegramMessage } from "@/lib/telegram";
 export const GET = requireAdmin(
   async (
     request: NextRequest,
@@ -34,6 +35,8 @@ export const GET = requireAdmin(
           role: true,
           createdAt: true,
           telegramChatId: true,
+          vendorTrialEndsAt: true,
+          vendorTrialQuota: true,
         },
       });
 
@@ -55,6 +58,8 @@ export const GET = requireAdmin(
         password: "",
         confirmPassword: "",
         telegramChatId: user.telegramChatId || null,
+        vendorTrialEndsAt: user.vendorTrialEndsAt || null,
+        vendorTrialQuota: user.vendorTrialQuota || null,
       };
 
       return NextResponse.json({
@@ -155,8 +160,21 @@ export const PUT = requireAdmin(
           ),
           credits: z.coerce.number().min(0).max(1000000).optional(),
           role: z.enum(["USER", "ADMIN", "VENDEDOR"]),
-          trialDays: z.number().int().min(1).max(90).optional().nullable(),
-          trialQuota: z.number().int().min(1).max(1000).optional().nullable(),
+
+          trialDays: z.coerce
+            .number()
+            .int()
+            .min(1)
+            .max(90)
+            .optional()
+            .nullable(),
+          trialQuota: z.coerce
+            .number()
+            .int()
+            .min(1)
+            .max(1000)
+            .optional()
+            .nullable(),
           password: z
             .string()
             .trim()
@@ -194,8 +212,17 @@ export const PUT = requireAdmin(
         );
       }
 
-      const { fullName, username, email, phone, credits, role, password, trialDays, trialQuota } =
-        validation.data;
+      const {
+        fullName,
+        username,
+        email,
+        phone,
+        credits,
+        role,
+        password,
+        trialDays,
+        trialQuota,
+      } = validation.data;
 
       // Compruebe si el usuario existe
       const existingUser = await db.user.findUnique({
@@ -272,6 +299,10 @@ export const PUT = requireAdmin(
         updatedAt: new Date(),
       };
 
+      const previousRole = existingUser.role;
+      const isRoleChangeToVendor =
+        role === "VENDEDOR" && previousRole !== "VENDEDOR";
+
       // === Período de prueba para vendedores ===
       if (role === "VENDEDOR") {
         if (trialDays && trialDays > 0) {
@@ -321,6 +352,61 @@ export const PUT = requireAdmin(
           credits: updatedUser.credits,
           role: updatedUser.role,
         });
+      }
+
+      if (isRoleChangeToVendor) {
+        // Consultar telegramChatId del usuario actualizado
+        const fullUser = await db.user.findUnique({
+          where: { id: userId },
+          select: {
+            telegramChatId: true,
+            fullName: true,
+            username: true,
+            email: true,
+            vendorTrialEndsAt: true,
+            vendorTrialQuota: true,
+          },
+        });
+
+        if (fullUser?.telegramChatId) {
+          const tieneTrial =
+            !!fullUser.vendorTrialEndsAt && !!fullUser.vendorTrialQuota;
+          const fechaFin = fullUser.vendorTrialEndsAt
+            ? new Intl.DateTimeFormat("es-CO", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+                timeZone: "America/Bogota",
+              }).format(new Date(fullUser.vendorTrialEndsAt))
+            : "";
+
+          const nombre = escapeMarkdown(
+            fullUser.fullName || fullUser.username || fullUser.email,
+          );
+
+          let texto: string;
+          if (tieneTrial) {
+            texto =
+              `🎉 *¡Felicidades ${nombre}\\!*\n\n` +
+              `Tu cuenta ha sido promovida al rol *Vendedor* en RiyoStream\\.\n\n` +
+              `Se te ha asignado un *período de prueba*:\n\n` +
+              `⏰ *Fecha límite:* ${escapeMarkdown(fechaFin)}\n\n` +
+              `Si no cumples con las ventas requeridas antes de la fecha límite, tu cuenta volverá automáticamente al rol de Usuario\\.\n\n` +
+              `¡Mucho éxito\\! 💪`;
+          } else {
+            texto =
+              `🎉 *¡Felicidades ${nombre}\\!*\n\n` +
+              `Tu cuenta ha sido promovida al rol *Vendedor* en RiyoStream\\.\n\n` +
+              `¡Mucho éxito\\! 💪`;
+          }
+
+          await sendTelegramMessage(fullUser.telegramChatId, texto, {
+            parse_mode: "Markdown",
+          });
+        }
       }
 
       return NextResponse.json({
