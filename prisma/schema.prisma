@@ -57,6 +57,8 @@ model User {
   resetPasswordToken       String?            @unique
   resetPasswordExpires     DateTime?
   tokenVersion             Int                @default(0)
+  vendorTrialEndsAt        DateTime?
+  vendorTrialQuota         Int?
 }
 
 model Account {
@@ -356,7 +358,7 @@ model MonthlyProfit {
   id              String   @id @default(cuid())
   year            Int // Año (Ej: 2025)
   month           Int // Mes (1-12)
-  revenue         Float // Ingresos del mes
+  revenue         Float // Ingresos del mesy 
   expenses        Float // Gastos del mes
   profits         Float // Ganancias del mes
   profitMargin    Float // Margen de ganancia (%)
