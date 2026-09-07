@@ -60,6 +60,7 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
         isActive: true,
         isBlocked: true,
         tokenVersion: true,
+        vendorTrialStartedAt: true,
         vendorTrialEndsAt: true,
         vendorTrialQuota: true,
         telegramChatId: true,
@@ -73,6 +74,7 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
     // === Chequeo de trial de vendedor ===
     if (
       user.role === "VENDEDOR" &&
+      user.vendorTrialStartedAt &&
       user.vendorTrialEndsAt &&
       user.vendorTrialQuota
     ) {
@@ -82,7 +84,10 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
           where: {
             userId: user.id,
             status: "COMPLETED",
-            createdAt: { lte: user.vendorTrialEndsAt },
+            createdAt: {
+              gte: user.vendorTrialStartedAt,
+              lte: user.vendorTrialEndsAt,
+            },
           },
         });
 

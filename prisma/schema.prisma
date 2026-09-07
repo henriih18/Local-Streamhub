@@ -59,6 +59,11 @@ model User {
   tokenVersion             Int                @default(0)
   vendorTrialEndsAt        DateTime?
   vendorTrialQuota         Int?
+  vendorTrialStartedAt     DateTime?
+
+  @@index([role]) // /api/admin/broadcast, special-offers
+  @@index([role, isBlocked]) // users-search (filtro por rol + estado)
+  @@index([role, vendorTrialEndsAt])
 }
 
 model Account {
@@ -163,6 +168,13 @@ model Order {
   accountStock       AccountStock?     @relation(fields: [accountStockId], references: [id])
   accountProfile     AccountProfile?   @relation(fields: [accountProfileId], references: [id])
   exclusiveStock     ExclusiveStock?   @relation(fields: [exclusiveStockId], references: [id])
+
+  @@index([userId, status])
+  @@index([userId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([streamingAccountId])
+  @@index([exclusiveAccountId])
+  @@index([createdAt])
 }
 
 model CreditRecharge {
@@ -175,6 +187,9 @@ model CreditRecharge {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
   user      User           @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([status, createdAt])
 }
 
 model AccountProfile {
@@ -192,6 +207,9 @@ model AccountProfile {
   streamingAccount   StreamingAccount @relation(fields: [streamingAccountId], references: [id])
   soldToUser         User?            @relation(fields: [soldToUserId], references: [id])
   orders             Order[]
+
+  @@index([streamingAccountId, isAvailable])
+  @@index([soldToUserId])
 }
 
 model AccountStock {
@@ -207,6 +225,9 @@ model AccountStock {
   streamingAccount   StreamingAccount @relation(fields: [streamingAccountId], references: [id])
   soldToUser         User?            @relation(fields: [soldToUserId], references: [id])
   orders             Order[]
+
+  @@index([streamingAccountId, isAvailable])
+  @@index([soldToUserId])
 }
 
 model Cart {
@@ -232,6 +253,9 @@ model CartItem {
   cart               Cart              @relation(fields: [cartId], references: [id])
   streamingAccount   StreamingAccount? @relation(fields: [streamingAccountId], references: [id])
   exclusiveAccount   ExclusiveAccount? @relation(fields: [exclusiveAccountId], references: [id])
+
+  @@index([streamingAccountId])
+  @@index([exclusiveAccountId])
 }
 
 model SpecialOffer {
@@ -247,6 +271,10 @@ model SpecialOffer {
   updatedAt          DateTime         @updatedAt
   user               User             @relation(fields: [userId], references: [id])
   streamingAccount   StreamingAccount @relation(fields: [streamingAccountId], references: [id])
+
+  @@index([userId, isActive])
+  @@index([streamingAccountId, isActive])
+  @@index([expiresAt])
 }
 
 model ExclusiveAccount {
@@ -290,6 +318,9 @@ model ExclusiveStock {
   exclusiveAccount   ExclusiveAccount @relation(fields: [exclusiveAccountId], references: [id])
   soldToUser         User?            @relation(fields: [soldToUserId], references: [id])
   orders             Order[]
+
+  @@index([exclusiveAccountId, isAvailable])
+  @@index([soldToUserId])
 }
 
 model Message {
@@ -304,6 +335,10 @@ model Message {
   updatedAt  DateTime    @updatedAt
   sender     User        @relation("SentMessages", fields: [senderId], references: [id])
   receiver   User        @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([receiverId, isRead])
+  @@index([receiverId, createdAt])
+  @@index([senderId])
 }
 
 model SupportContact {
@@ -327,6 +362,8 @@ model UserWarning {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, isActive])
 }
 
 model UserBlock {
@@ -339,6 +376,9 @@ model UserBlock {
   createdAt DateTime  @default(now())
   expiresAt DateTime? // Expiration date for temporary blocks
   user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, isActive])
+  @@index([expiresAt])
 }
 
 model Expense {

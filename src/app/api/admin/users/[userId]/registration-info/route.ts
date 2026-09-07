@@ -310,13 +310,20 @@ export const PUT = requireAdmin(
           trialEnd.setDate(trialEnd.getDate() + trialDays);
           updateData.vendorTrialEndsAt = trialEnd;
           updateData.vendorTrialQuota = trialQuota || 5;
+          // Solo registrar el inicio si NO tenía trial previo
+          // (evita reiniciar el contador cuando el admin edita otra cosa)
+          if (!existingUser.vendorTrialStartedAt) {
+            updateData.vendorTrialStartedAt = new Date();
+          }
         } else if (trialDays === null) {
           updateData.vendorTrialEndsAt = null;
           updateData.vendorTrialQuota = null;
+          updateData.vendorTrialStartedAt = null;
         }
       } else {
         updateData.vendorTrialEndsAt = null;
         updateData.vendorTrialQuota = null;
+        updateData.vendorTrialStartedAt = null;
       }
 
       // Agregue una contraseña para actualizar si se proporciona
@@ -376,9 +383,6 @@ export const PUT = requireAdmin(
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
                 timeZone: "America/Bogota",
               }).format(new Date(fullUser.vendorTrialEndsAt))
             : "";
@@ -393,7 +397,7 @@ export const PUT = requireAdmin(
               `🎉 *¡Felicidades ${nombre}!*\n\n` +
               `Tu cuenta ha sido promovida al rol *Vendedor* en RiyoStream.\n\n` +
               `Se te ha asignado un *período de prueba*:\n\n` +
-              `⏰ *Fecha límite:* ${escapeMarkdown(fechaFin)}\n\n` +
+              `⏰ *Fecha límite:* ${fechaFin}\n\n` +
               `Si no cumples con las ventas requeridas antes de la fecha límite, tu cuenta volverá automáticamente al rol de Usuario.\n\n` +
               `¡Mucho éxito! 💪`;
           } else {
@@ -436,4 +440,3 @@ export const PUT = requireAdmin(
     }
   },
 );
-
