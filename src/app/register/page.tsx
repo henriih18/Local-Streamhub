@@ -23,9 +23,10 @@ import {
   Phone,
   Lock,
   Check,
-  X,
   AlertCircle,
   Send,
+  Gift,
+  X,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast-custom";
 import { FloatingStreamingIcons } from "@/components/floating-streaming-icons";
@@ -59,6 +60,14 @@ export default function RegisterPage() {
   const [telegramToken, setTelegramToken] = useState<string | null>(null);
   const [telegramError, setTelegramError] = useState("");
   const telegramPollRef = useRef<NodeJS.Timeout | null>(null);
+  const [referralCode, setReferralCode] = useState("");
+  const [referralStatus, setReferralStatus] = useState<{
+    checked: boolean;
+    valid: boolean;
+    referrerUsername?: string;
+  }>({ checked: false, valid: false });
+  const [showReferralInput, setShowReferralInput] = useState(false);
+  const [cameFromReferralLink, setCameFromReferralLink] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -119,6 +128,48 @@ export default function RegisterPage() {
       }
     };
   }, []);
+
+  // === NUEVO: Detectar código de referido en la URL ===
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref) {
+        // Sanitizar el código: solo alfanumérico + guiones, máximo 50 chars
+        const cleanRef = ref
+          .toUpperCase()
+          .replace(/[^a-zA-Z0-9_-]/g, "")
+          .slice(0, 20);
+        if (cleanRef) {
+          setReferralCode(cleanRef);
+          setShowReferralInput(true);
+          setCameFromReferralLink(true);
+          checkReferralCode(cleanRef);
+        }
+      }
+    }
+  }, []);
+
+  // === NUEVO: Función para validar código de referido ===
+  const checkReferralCode = async (code: string) => {
+    if (!code || code.length < 3) {
+      setReferralStatus({ checked: false, valid: false });
+      return;
+    }
+    try {
+      const res = await fetch(
+        `/api/referrals/validate?code=${encodeURIComponent(code)}`,
+      );
+      const data = await res.json();
+      setReferralStatus({
+        checked: true,
+        valid: data.valid,
+        referrerUsername: data.referrerUsername,
+      });
+    } catch {
+      setReferralStatus({ checked: false, valid: false });
+    }
+  };
 
   // ── Telegram Verification Function ──
   const startTelegramVerification = async () => {
@@ -279,6 +330,8 @@ export default function RegisterPage() {
           country: "CO",
           language: "es",
           acceptMarketing: false,
+          referralCode:
+            referralCode && referralStatus.valid ? referralCode : undefined,
         }),
       });
 
@@ -528,7 +581,7 @@ export default function RegisterPage() {
                     Teléfono *
                   </Label>
                   <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
-                    Requiere verificación por Telegram
+                    Requiere verificación por Telegram / Telegram X
                   </span>
                 </div>
                 <div className="flex">
@@ -574,7 +627,7 @@ export default function RegisterPage() {
                       onClick={startTelegramVerification}
                     >
                       <Send className="w-4 h-4 mr-2" />
-                      Verificar teléfono por Telegram
+                      Verificar por Telegram / Telegram X
                     </Button>
                     <div className="relative">
                       <button
@@ -762,6 +815,80 @@ export default function RegisterPage() {
                   <p className="text-red-400 text-sm">
                     {errors.confirmPassword}
                   </p>
+                )}
+              </div>
+
+              {/* === NUEVO: Banner de referido (si vino con link) === */}
+              {cameFromReferralLink && referralStatus.valid && (
+                <div className="mb-4 bg-emerald-500/20 border border-emerald-500/50 rounded-lg p-3 flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="text-emerald-300 font-semibold">
+                      ¡Fuiste invitado por @{referralStatus.referrerUsername}!
+                    </p>
+                    {/* <p className="text-emerald-200/80 text-xs">
+                      Estás ayudando a tu amigo a ganar créditos
+                    </p> */}
+                  </div>
+                </div>
+              )}
+
+              {/* === NUEVO: Campo opcional de código de referido === */}
+              <div className="mt-4 pt-4 border-t border-slate-700">
+                {!showReferralInput ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowReferralInput(true)}
+                    className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                  >
+                    <Gift className="h-3 w-3" />
+                    ¿Tienes un código de referido? Úsalo aquí →
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="text-slate-300 text-sm">
+                      Código de referido (opcional)
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={referralCode}
+                        onChange={(e) => {
+                          // Sanitizar input: solo alfanumérico + guiones, max 50
+                          const val = e.target.value
+                            .toUpperCase()
+                            .replace(/[^a-zA-Z0-9_-]/g, "")
+                            .slice(0, 20);
+                          setReferralCode(val);
+                          checkReferralCode(val);
+                        }}
+                        placeholder="Ej: JUANA3F5B2"
+                        className="bg-slate-700 border-slate-600 text-white pr-10"
+                        maxLength={20}
+                      />
+                      {referralStatus.checked && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {referralStatus.valid ? (
+                            <Check className="h-4 w-4 text-emerald-400" />
+                          ) : (
+                            <X className="h-4 w-4 text-red-400" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {referralStatus.checked && referralStatus.valid && (
+                      <p className="text-xs text-emerald-400">
+                        ✓ Invitado por @{referralStatus.referrerUsername}
+                      </p>
+                    )}
+                    {referralStatus.checked &&
+                      !referralStatus.valid &&
+                      referralCode && (
+                        <p className="text-xs text-red-400">
+                          ✗ Código no válido
+                        </p>
+                      )}
+                  </div>
                 )}
               </div>
 

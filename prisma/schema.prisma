@@ -61,6 +61,13 @@ model User {
   vendorTrialQuota         Int?
   vendorTrialStartedAt     DateTime?
 
+  referredById String?
+  referralCode String? @unique
+
+  // === Relaciones con Referral ===
+  referralsMade Referral[] @relation("ReferralsMade")
+  referralOf    Referral?  @relation("ReferralOf")
+
   @@index([role]) // /api/admin/broadcast, special-offers
   @@index([role, isBlocked]) // users-search (filtro por rol + estado)
   @@index([role, vendorTrialEndsAt])
@@ -497,4 +504,20 @@ model TelegramSupportThread {
   @@unique([userChatId, botType])
   @@index([threadId])
   @@index([userChatId])
+}
+
+model Referral {
+  id               String   @id @default(cuid())
+  referrerId       String
+  referredId       String   @unique
+  status           String   @default("PENDING")
+  creditsEarned    Float    @default(0)
+  completedOrderId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  referrer User @relation("ReferralsMade", fields: [referrerId], references: [id])
+  referred User @relation("ReferralOf", fields: [referredId], references: [id])
+
+  @@index([referrerId])
 }

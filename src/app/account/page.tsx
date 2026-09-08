@@ -31,6 +31,9 @@ import {
   Monitor,
   Crown,
   Filter,
+  Gift,
+  Users,
+  Copy,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast-custom";
 import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
@@ -127,6 +130,13 @@ export default function AccountPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
 
+  const [referralData, setReferralData] = useState<{
+    referralCode: string;
+    referrals: any[];
+    stats: { total: number; completed: number; creditsEarned: number };
+  } | null>(null);
+  const [copiedReferral, setCopiedReferral] = useState(false);
+
   useEffect(() => {
     const checkAuth = () => {
       const storedUser = localStorage.getItem("user");
@@ -219,11 +229,13 @@ export default function AccountPage() {
       fetchSupportContacts();
       loadCartItems();
       fetchUserCredits();
+      fetchReferralData();
     } else {
       setOrders([]);
       setSupportContacts([]);
       setCartItems([]);
       setTotalOrders(0);
+      setReferralData(null);
     }
   }, [user, orderFilter]);
 
@@ -260,6 +272,36 @@ export default function AccountPage() {
       }
     } catch (error) {
       /* console.error("Error al obtener créditos:", error); */
+    }
+  };
+
+  // === NUEVO: Cargar datos de referidos ===
+  const fetchReferralData = async () => {
+    try {
+      const res = await fetch("/api/referrals", { credentials: "include" });
+      const data = await res.json();
+      if (data.success) {
+        setReferralData({
+          referralCode: data.referralCode,
+          referrals: data.referrals,
+          stats: data.stats,
+        });
+      }
+    } catch (error) {
+      // silencioso
+    }
+  };
+
+  const copyReferralLink = async () => {
+    if (!referralData?.referralCode) return;
+    const link = `${window.location.origin}/register?ref=${referralData.referralCode}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedReferral(true);
+      toast.success("¡Enlace copiado al portapapeles!");
+      setTimeout(() => setCopiedReferral(false), 2000);
+    } catch {
+      toast.error("No se pudo copiar el enlace");
     }
   };
 
@@ -448,6 +490,132 @@ export default function AccountPage() {
               </div>
             </CardHeader>
           </Card>
+
+          {/* === NUEVO: Sección "Invita amigos" === */}
+          {referralData && (
+            <Card className="bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border-emerald-600/30 mb-8">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-emerald-400" />
+                  Invita amigos y gana créditos
+                </CardTitle>
+                <p className="text-emerald-200/80 text-sm">
+                  Por cada amigo que haga su primera compra, recibes el 10% en
+                  créditos
+                </p>
+              </CardHeader>
+              <CardContent>
+                {/* Tu código de referido */}
+                <div className="bg-slate-900/50 p-4 rounded-lg mb-4">
+                  <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <div className="flex-1 text-center">
+                      <p className="text-xs text-slate-400 mb-1">Tu código</p>
+                      <p className="text-2xl font-bold text-emerald-400 tracking-wider break-all">
+                        {referralData.referralCode || "Cargando..."}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={copyReferralLink}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {copiedReferral ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          ¡Copiado!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copiar enlace
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-slate-700 text-xs text-slate-400">
+                    <p className="mb-1">
+                      📊 Enlace:{" "}
+                      <span className="text-emerald-300">
+                        {typeof window !== "undefined"
+                          ? `${window.location.origin}/register?ref=${referralData.referralCode}`
+                          : ""}
+                      </span>
+                    </p>
+                    <p>
+                      🎁 Recompensa:{" "}
+                      <span className="text-emerald-300 font-semibold">
+                        Recibes 10% de la primera compra de tu amigo en créditos
+                      </span>
+                    </p>
+                    <p className="mt-1 text-slate-500">
+                      Tu amigo paga el precio normal, tú recibes la recompensa
+                    </p>
+                  </div>
+                </div>
+                {/* Stats de referidos */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-slate-900/50 p-3 rounded-lg text-center">
+                    <Users className="h-5 w-5 mx-auto text-blue-400 mb-1" />
+                    <p className="text-xl font-bold text-white">
+                      {referralData.stats.total}
+                    </p>
+                    <p className="text-xs text-slate-400">Invitados</p>
+                  </div>
+                  <div className="bg-slate-900/50 p-3 rounded-lg text-center">
+                    <CheckCircle className="h-5 w-5 mx-auto text-emerald-400 mb-1" />
+                    <p className="text-xl font-bold text-white">
+                      {referralData.stats.completed}
+                    </p>
+                    <p className="text-xs text-slate-400">Compraron</p>
+                  </div>
+                  <div className="bg-slate-900/50 p-3 rounded-lg text-center">
+                    <Gift className="h-5 w-5 mx-auto text-amber-400 mb-1" />
+                    <p className="text-xl font-bold text-emerald-400">
+                      $
+                      {referralData.stats.creditsEarned.toLocaleString("es-CO")}
+                    </p>
+                    <p className="text-xs text-slate-400">Ganado</p>
+                  </div>
+                </div>
+               {/* Lista de referidos (expandible)
+                {referralData.referrals.length > 0 &&
+                  {
+                     <details className="mt-4">
+                    <summary className="cursor-pointer text-sm text-emerald-300 hover:text-emerald-200">
+                      Ver mis referidos ({referralData.referrals.length})
+                    </summary>
+                    <div className="mt-3 space-y-2">
+                      {referralData.referrals.map((ref: any) => (
+                        <div
+                          key={ref.id}
+                          className="flex items-center justify-between p-2 bg-slate-900/50 rounded text-sm"
+                        >
+                          <span className="text-slate-300">
+                            {ref.referred.email}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              ref.status === "REWARDED"
+                                ? "bg-emerald-500/20 text-emerald-300"
+                                : ref.status === "EXPIRED"
+                                  ? "bg-red-500/20 text-red-300"
+                                  : "bg-slate-500/20 text-slate-400"
+                            }`}
+                          >
+                            {ref.status === "REWARDED"
+                              ? `+${ref.creditsEarned} créditos`
+                              : ref.status === "EXPIRED"
+                                ? "Expirado"
+                                : "Pendiente"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </details> 
+                  }}*/}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

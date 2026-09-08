@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { escapeMarkdown } from "@/lib/telegram";
 import { timingSafeEqual } from "crypto";
+import { logger } from "@/lib/logger";
 
 const API = process.env.TELEGRAM_API_URL || "http://telegram-bot-api:8081";
 const TOKEN = process.env.TELEGRAM_SUPPORT_BOT_TOKEN || "";
@@ -95,7 +96,10 @@ export async function POST(req: NextRequest) {
     const topicData = await topicRes.json();
 
     if (!topicData.ok) {
-      console.error("[SupportWebhook] createForumTopic failed:", topicData);
+      logger.error(
+        { context: "support_webhook", topicData },
+        "[SupportWebhook] createForumTopic failed",
+      );
       await sendToUser(
         cbChatId,
         "❌ No se pudo crear la conversación. Verifica que el bot sea admin del grupo con Topics habilitados.",
@@ -306,7 +310,10 @@ export async function POST(req: NextRequest) {
       const topicData = await topicRes.json();
 
       if (!topicData.ok) {
-        console.error("[SupportWebhook] createForumTopic failed:", topicData);
+        logger.error(
+          { context: "support_webhook", topicData },
+          "[SupportWebhook] createForumTopic failed",
+        );
         await sendToUser(
           chatId,
           "❌ No se pudo crear la conversación. Intenta más tarde.",

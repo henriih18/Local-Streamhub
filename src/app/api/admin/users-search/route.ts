@@ -24,6 +24,12 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
       "ALL",
     );
 
+    const trial = parseSafeEnum(
+      searchParams.get("trial"),
+      ["ALL", "TRIAL_ACTIVE", "NO_TRIAL"],
+      "ALL",
+    );
+
     // Construir filtro WHERE
     const where: any = {};
     if (role !== "ALL") {
@@ -33,6 +39,11 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
       where.isBlocked = false;
     } else if (status === "BLOCKED") {
       where.isBlocked = true;
+    }
+    if (trial === "TRIAL_ACTIVE") {
+      where.vendorTrialEndsAt = { not: null };
+    } else if (trial === "NO_TRIAL") {
+      where.vendorTrialEndsAt = null;
     }
     if (search.trim()) {
       const searchLower = search.toLowerCase();
@@ -63,6 +74,8 @@ export const GET = requireAdmin(async (request: NextRequest, user) => {
         blockExpiresAt: true,
         blockReason: true,
         telegramChatId: true,
+        vendorTrialEndsAt: true,
+        vendorTrialQuota: true,
         _count: {
           select: {
             orders: true,

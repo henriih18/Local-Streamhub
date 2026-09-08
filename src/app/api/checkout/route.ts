@@ -22,6 +22,113 @@ class StockConflictError extends Error {
   }
 }
 
+// === NUEVO: Procesar recompensa de referido al completar primera compra ===
+async function processReferralReward(
+  userId: string,
+  orderId: string,
+  orderTotal: number,
+): Promise<void> {
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { referredById: true },
+    });
+
+    if (!user?.referredById) return;
+
+    const referral = await db.referral.findUnique({
+      where: { referredId: userId },
+    });
+
+    if (!referral || referral.status !== "PENDING") return;
+
+    // Debe ser la PRIMERA compra COMPLETED del usuario
+    const previousCompletedOrders = await db.order.count({
+      where: {
+        userId: userId,
+        status: "COMPLETED",
+        id: { not: orderId },
+      },
+    });
+
+    if (previousCompletedOrders > 0) return;
+
+    // Validar que el referidor siga activo
+    const referrer = await db.user.findUnique({
+      where: { id: user.referredById },
+      select: {
+        id: true,
+        telegramChatId: true,
+        fullName: true,
+        username: true,
+        isActive: true,
+        isBlocked: true,
+      },
+    });
+
+    if (!referrer || !referrer.isActive || referrer.isBlocked) {
+      await db.referral.update({
+        where: { id: referral.id },
+        data: { status: "EXPIRED" },
+      });
+      return;
+    }
+
+    // Calcular recompensa (10% del total)
+    const REWARD_PERCENT = 10;
+    const reward = Math.round(orderTotal * (REWARD_PERCENT / 100));
+
+    if (reward <= 0) return;
+
+    // Transacción atómica: actualizar referral + acreditar créditos
+    await db.$transaction([
+      db.referral.update({
+        where: { id: referral.id },
+        data: {
+          status: "REWARDED",
+          creditsEarned: reward,
+          completedOrderId: orderId,
+        },
+      }),
+      db.user.update({
+        where: { id: referrer.id },
+        data: { credits: { increment: reward } },
+      }),
+    ]);
+
+    // Notificar al referidor por Telegram
+    if (referrer.telegramChatId) {
+      const tgText =
+        `🎉 *¡Has ganado una recompensa\\!*\n\n` +
+        `Tu amigo realizó su primera compra\\.\n` +
+        `🎁 Has recibido *${reward} créditos*\\.\n\n` +
+        `¡Sigue compartiendo tu código\\!`;
+
+      await sendTelegramMessage(referrer.telegramChatId, tgText, {
+        parse_mode: "Markdown",
+      }).catch((err) =>
+        logger.error({ err }, "Error al enviar Telegram de recompensa"),
+      );
+    }
+
+    logger.info(
+      {
+        context: "referral_reward",
+        referrerId: referrer.id,
+        referredId: userId,
+        orderId,
+        reward,
+      },
+      "Recompensa de referido acreditada",
+    );
+  } catch (error) {
+    logger.error(
+      { err: error, context: "referral_reward" },
+      "Error al procesar recompensa de referido (no bloquea checkout)",
+    );
+  }
+}
+
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
     await request.json();
@@ -368,6 +475,19 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 
       return { createdOrders, newCredits: updatedUser?.credits };
     });
+
+    // === NUEVO: Procesar recompensa de referido si corresponde ===
+    // Fire-and-forget (no bloquea la respuesta al usuario)
+    if (orders?.createdOrders && orders.createdOrders.length > 0) {
+      const totalComprado = orders.createdOrders.reduce(
+        (sum: number, o: any) => sum + (o.totalPrice || 0),
+        0,
+      );
+      const firstOrderId = orders.createdOrders[0].id;
+      processReferralReward(user.id, firstOrderId, totalComprado).catch((err) =>
+        logger.error({ err }, "Error en processReferralReward"),
+      );
+    }
 
     const io = getIO();
     if (io) {

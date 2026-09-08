@@ -11,6 +11,17 @@ import { rateLimit, getClientIP } from "@/lib/rate-limiter";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
 
+// === Función para generar código de referido único ===
+function generateReferralCode(username: string): string {
+  const cleanUsername = username
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 4);
+  // 6 caracteres aleatorios hex (anti-fuerza bruta)
+  const random = crypto.randomBytes(3).toString("hex").toUpperCase();
+  return `${cleanUsername}${random}`;
+}
+
 const registerSchema = z
   .object({
     fullName: z
@@ -50,6 +61,17 @@ const registerSchema = z
     language: z.string().optional(),
     telegramTempToken: z.string().min(1, "Verificación de Telegram requerida"),
     acceptMarketing: z.boolean().default(false),
+    referralCode: z
+      .string()
+      .trim()
+      .min(4, "Código de referido demasiado corto")
+      .max(50, "Código de referido demasiado largo")
+      .regex(
+        /^[a-zA-Z0-9_-]+$/,
+        "Código de referido solo puede contener letras, números, guiones y guiones bajos",
+      )
+      .optional()
+      .nullable(),
   })
   .strict();
 
@@ -106,6 +128,7 @@ export async function POST(request: NextRequest) {
       country,
       language,
       acceptMarketing,
+      referralCode,
     } = validation.data;
 
     const sanitizedFullName = sanitizeFullName(fullName);
@@ -244,6 +267,77 @@ export async function POST(request: NextRequest) {
         createdAt: true,
       },
     });
+
+    // Generar código de referido único para el nuevo usuario ===
+    let newReferralCode = generateReferralCode(sanitizedUsername);
+    let attempts = 0;
+    while (
+      (await db.user.findUnique({
+        where: { referralCode: newReferralCode },
+      })) &&
+      attempts < 10
+    ) {
+      newReferralCode = generateReferralCode(sanitizedUsername);
+      attempts++;
+    }
+
+    //Procesar código de referido si existe (con validación de seguridad) ===
+    let referredById: string | null = null;
+    if (referralCode) {
+      const referrer = await db.user.findUnique({
+        where: { referralCode: referralCode.toUpperCase().trim() },
+        select: { id: true, isActive: true, isBlocked: true },
+      });
+      // Validaciones de seguridad:
+      // 1. El referidor debe existir
+      // 2. El referidor debe estar activo (no bloqueado, no inactivo)
+      // 3. No puede referirse a sí mismo (el ID del nuevo usuario ya está creado)
+      if (
+        referrer &&
+        referrer.isActive &&
+        !referrer.isBlocked &&
+        referrer.id !== newUser.id
+      ) {
+        referredById = referrer.id;
+      }
+    }
+
+    // Actualizar usuario con código de referido y referidor
+    await db.user.update({
+      where: { id: newUser.id },
+      data: {
+        referralCode: newReferralCode,
+        referredById: referredById,
+      },
+    });
+
+    // Crear registro de Referral (pendiente hasta primera compra)
+    if (referredById) {
+      try {
+        await db.referral.create({
+          data: {
+            referrerId: referredById,
+            referredId: newUser.id,
+            status: "PENDING",
+          },
+        });
+        logger.info(
+          {
+            context: "referral",
+            referrerId: referredById,
+            referredId: newUser.id,
+            referralCodeUsed: referralCode,
+          },
+          "Nuevo usuario registrado con código de referido",
+        );
+      } catch (referralError) {
+        // Si falla la creación del referral, no bloquear el registro
+        logger.error(
+          { err: referralError, context: "referral_create" },
+          "Error al crear registro de referido (no bloquea el registro)",
+        );
+      }
+    }
 
     return NextResponse.json(
       { message: "Usuario creado exitosamente", user: newUser },

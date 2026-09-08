@@ -4,6 +4,10 @@ import { db } from "@/lib/db";
 import { logger } from "./logger";
 import { sendTelegramMessage } from "./telegram";
 
+// Lock en memoria para evitar notificaciones duplicadas del trial
+// (race condition entre peticiones concurrentes)
+const trialNotificationLocks = new Map<string, boolean>();
+
 function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
 
@@ -64,82 +68,116 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
         vendorTrialEndsAt: true,
         vendorTrialQuota: true,
         telegramChatId: true,
+        blockExpiresAt: true,
       },
     });
 
     if (!user) return { user: null, error: "Usuario no existe" };
     if (!user.isActive) return { user: null, error: "Cuenta inactiva" };
-    if (user.isBlocked) return { user: null, error: "Cuenta bloqueada" };
+    //if (user.isBlocked) return { user: null, error: "Cuenta bloqueada" };
+        if (user.isBlocked) {
+      // Auto-desbloquear si el bloqueo temporal ya expiró
+      if (user.blockExpiresAt && new Date() > user.blockExpiresAt) {
+        await db.user
+          .update({
+            where: { id: user.id },
+            data: {
+              isBlocked: false,
+              blockExpiresAt: null,
+              blockReason: null,
+            },
+          })
+          .catch((err) => {
+            logger.error(
+              { err, context: "auto_unblock" },
+              "No se pudo auto-desbloquear al usuario",
+            );
+          });
+      } else {
+        return { user: null, error: "Cuenta bloqueada" };
+      }
+    }
 
     // === Chequeo de trial de vendedor ===
     if (
       user.role === "VENDEDOR" &&
       user.vendorTrialStartedAt &&
       user.vendorTrialEndsAt &&
-      user.vendorTrialQuota
+      user.vendorTrialQuota &&
+      !trialNotificationLocks.has(user.id)
     ) {
       const now = new Date();
       if (now > user.vendorTrialEndsAt) {
-        const totalVentas = await db.order.count({
-          where: {
-            userId: user.id,
-            status: "COMPLETED",
-            createdAt: {
-              gte: user.vendorTrialStartedAt,
-              lte: user.vendorTrialEndsAt,
-            },
-          },
-        });
+        // Marcar como "en proceso" para que peticiones paralelas no envíen duplicados
+        trialNotificationLocks.set(user.id, true);
 
-        if (totalVentas < user.vendorTrialQuota) {
-          await db.user.update({
-            where: { id: user.id },
-            data: {
-              role: "USER",
-              vendorTrialEndsAt: null,
-              vendorTrialQuota: null,
+        try {
+          const totalVentas = await db.order.count({
+            where: {
+              userId: user.id,
+              status: "COMPLETED",
+              createdAt: {
+                gte: user.vendorTrialStartedAt,
+                lte: user.vendorTrialEndsAt,
+              },
             },
           });
-          await notifyVendorTrialResult({
-            userId: user.id,
-            telegramChatId: user.telegramChatId,
-            totalVentas,
-            trialQuota: user.vendorTrialQuota,
-            aprobo: false,
-          }).catch((notifyErr) => {
-            logger.error(
-              { err: notifyErr, context: "vendor_trial_failed_notify" },
-              "No se pudo notificar la expiracion del trial (no aprobo)",
-            );
-          });
-          return {
-            user: {
-              id: user.id,
-              email: user.email,
-              role: "USER",
-            },
-            error: `Tu período de prueba finalizó. Vendiste ${totalVentas} de ${user.vendorTrialQuota} cuentas requeridas.`,
-          };
-        } else {
-          await db.user.update({
-            where: { id: user.id },
-            data: {
-              vendorTrialEndsAt: null,
-              vendorTrialQuota: null,
-            },
-          });
-          await notifyVendorTrialResult({
-            userId: user.id,
-            telegramChatId: user.telegramChatId,
-            totalVentas,
-            trialQuota: user.vendorTrialQuota,
-            aprobo: true,
-          }).catch((notifyErr) => {
-            logger.error(
-              { err: notifyErr, context: "vendor_trial_passed_notify" },
-              "No se pudo notificar la superacion del trial (aprobo)",
-            );
-          });
+
+          if (totalVentas < user.vendorTrialQuota) {
+            await db.user.update({
+              where: { id: user.id },
+              data: {
+                role: "USER",
+                vendorTrialStartedAt: null,
+                vendorTrialEndsAt: null,
+                vendorTrialQuota: null,
+              },
+            });
+            await notifyVendorTrialResult({
+              userId: user.id,
+              telegramChatId: user.telegramChatId,
+              totalVentas,
+              trialQuota: user.vendorTrialQuota,
+              aprobo: false,
+            }).catch((notifyErr) => {
+              logger.error(
+                { err: notifyErr, context: "vendor_trial_failed_notify" },
+                "No se pudo notificar la expiracion del trial (no aprobo)",
+              );
+            });
+            return {
+              user: {
+                id: user.id,
+                email: user.email,
+                role: "USER",
+              },
+              error: `Tu período de prueba finalizó. Vendiste ${totalVentas} de ${user.vendorTrialQuota} cuentas requeridas.`,
+            };
+          } else {
+            await db.user.update({
+              where: { id: user.id },
+              data: {
+                vendorTrialStartedAt: null,
+                vendorTrialEndsAt: null,
+                vendorTrialQuota: null,
+              },
+            });
+            await notifyVendorTrialResult({
+              userId: user.id,
+              telegramChatId: user.telegramChatId,
+              totalVentas,
+              trialQuota: user.vendorTrialQuota,
+              aprobo: true,
+            }).catch((notifyErr) => {
+              logger.error(
+                { err: notifyErr, context: "vendor_trial_passed_notify" },
+                "No se pudo notificar la superacion del trial (aprobo)",
+              );
+            });
+          }
+        } finally {
+          // Liberar el lock para futuros trials (si el admin le asigna otro)
+          trialNotificationLocks.delete(user.id);
         }
       }
     }

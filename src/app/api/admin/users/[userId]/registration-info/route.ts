@@ -289,6 +289,9 @@ export const PUT = requireAdmin(
       const creditsValue =
         credits !== undefined ? credits : existingUser.credits;
 
+      const previousRole = existingUser.role;
+      const isRoleChange = role !== previousRole;
+
       const updateData: any = {
         fullName: fullName.trim(),
         username: username.trim(),
@@ -297,9 +300,9 @@ export const PUT = requireAdmin(
         credits: creditsValue,
         role,
         updatedAt: new Date(),
+        ...(isRoleChange && { tokenVersion: { increment: 1 } }),
       };
 
-      const previousRole = existingUser.role;
       const isRoleChangeToVendor =
         role === "VENDEDOR" && previousRole !== "VENDEDOR";
 

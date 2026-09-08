@@ -4,7 +4,7 @@ import { join } from "path";
 import { stat } from "fs/promises";
 import { requireAdmin } from "@/lib/auth";
 import { logger } from "@/lib/logger";
-import { error } from "console";
+
 
 export const GET = requireAdmin(async (request: NextRequest) => {
   try {
@@ -60,7 +60,7 @@ export const GET = requireAdmin(async (request: NextRequest) => {
         total: validFiles.length,
       });
     } catch (dirError) {
-      logger.error({ err: error }, "Error al leer el directorio de cargas");
+      logger.error({ err: dirError }, "Error al leer el directorio de cargas");
       return NextResponse.json({
         success: true,
         images: [],

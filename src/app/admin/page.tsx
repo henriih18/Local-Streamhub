@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo } from "react";
+import { useState, useEffect, Suspense, useMemo, useCallback } from "react";
 import Navigation from "@/components/navigation";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -105,9 +105,10 @@ import {
 import { ProfitsCard } from "@/components/profits-card";
 
 import { useRealTimeStats } from "@/hooks/useRealTimeStats";
+import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
 import { Pagination } from "@/components/ui/pagination";
 
-import router from "next/router";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
@@ -341,12 +342,56 @@ interface AdvancedStats {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
   const {
     stats: realTimeStats,
     isConnected,
     lastUpdate,
     refreshStats,
   } = useRealTimeStats();
+
+  // === Tiempo real: escuchar stockUpdated para actualizar el inventario ===
+  const handleStockUpdate = useCallback((data: any) => {
+    // data = { accountId, accountType: "regular"|"exclusive", type: "FULL"|"PROFILES", newStock }
+
+    if (data.accountType === "regular") {
+      setAccounts((prev) =>
+        prev.map((acc) => {
+          if (acc.id !== data.accountId) return acc;
+          // Solo actualizar el tipo de stock que cambió
+          const newAccountStocks =
+            data.type === "FULL" ? data.newStock : acc._count.accountStocks;
+          const newProfileStocks =
+            data.type === "PROFILES" ? data.newStock : acc._count.profileStocks;
+          return {
+            ...acc,
+            _count: {
+              ...acc._count,
+              accountStocks: newAccountStocks,
+              profileStocks: newProfileStocks,
+            },
+          };
+        }),
+      );
+    } else if (data.accountType === "exclusive") {
+      setExclusiveAccounts((prev) =>
+        prev.map((acc) => {
+          if (acc.id !== data.accountId) return acc;
+          // Para exclusivas, exclusiveStocks es un array en el estado (no _count)
+          // Si la cantidad cambió, lo más seguro es re-fetchear (ver nota abajo)
+          return acc;
+        }),
+      );
+      // Para cuentas exclusivas, los stocks vienen como array en el estado,
+      // no como _count. Hacemos un re-fetch silencioso para mantener consistencia.
+      refreshInventorySilent();
+    }
+  }, []);
+
+  useRealTimeUpdates({
+    isAdmin: true,
+    onStockUpdate: handleStockUpdate,
+  });
 
   const [activeTab, setActiveTab] = useState("resumen");
   const [streamingTypes, setStreamingTypes] = useState<StreamingType[]>([]);
@@ -402,6 +447,9 @@ export default function AdminPage() {
 
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [trialFilter, setTrialFilter] = useState<
+    "ALL" | "TRIAL_ACTIVE" | "NO_TRIAL"
+  >("ALL");
   const [userCurrentPage, setUserCurrentPage] = useState(1);
   const [userTotalPages, setUserTotalPages] = useState(1);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
@@ -596,6 +644,7 @@ export default function AdminPage() {
   };
 
   // Función para actualizar el inventario manualmente
+  // Función para actualizar el inventario manualmente (con toast)
   const refreshInventory = async () => {
     try {
       if (!checkAuth()) return;
@@ -624,6 +673,30 @@ export default function AdminPage() {
       toast.success("Inventario actualizado");
     } catch {
       toast.error("No se pudo actualizar el inventario");
+    }
+  };
+
+  // Re-fetch silencioso del inventario (sin toast) — usado por socket events
+  const refreshInventorySilent = async () => {
+    try {
+      if (!checkAuth()) return;
+
+      const [accountsRes, exclusiveRes] = await Promise.all([
+        adminFetch("/api/admin/streaming-accounts"),
+        adminFetch("/api/admin/exclusive-accounts"),
+      ]);
+
+      if (accountsRes.ok) {
+        const accountsData = await accountsRes.json();
+        setAccounts(accountsData);
+      }
+
+      if (exclusiveRes.ok) {
+        const exclusiveData = await exclusiveRes.json();
+        setExclusiveAccounts(exclusiveData);
+      }
+    } catch {
+      // Silencioso: no mostramos toast para no molestar al admin
     }
   };
 
@@ -813,7 +886,12 @@ export default function AdminPage() {
     const loadDataByModule = async () => {
       switch (activeTab) {
         case "resumen":
-          await fetchStatsData();
+          await Promise.all([
+            fetchStatsData(),
+            fetchAccountsData(),
+            fetchExclusiveData(),
+          ]);
+
           break;
         case "tipos":
           await fetchTypesData();
@@ -877,7 +955,7 @@ export default function AdminPage() {
         return 1;
       });
     }
-  }, [roleFilter, userSearchQuery, statusFilter]);
+  }, [roleFilter, userSearchQuery, statusFilter, trialFilter]);
 
   // Re-fetch pedidos cuando cambia la página
   useEffect(() => {
@@ -1226,6 +1304,7 @@ export default function AdminPage() {
         limit: USERS_PER_PAGE.toString(),
         role: roleFilter,
         status: statusFilter,
+        trial: trialFilter,
         search: userSearchQuery.trim(),
         paginated: "true",
       });
@@ -2737,7 +2816,7 @@ export default function AdminPage() {
                           Actualizado: {lastUpdate.toLocaleTimeString()}
                         </span>
                       )}
-                      <Button
+                      {/* <Button
                         size="sm"
                         variant="outline"
                         onClick={refreshStats}
@@ -2745,7 +2824,7 @@ export default function AdminPage() {
                       >
                         <RefreshCw className="w-3 h-3 mr-1" />
                         Actualizar
-                      </Button>
+                      </Button> */}
                     </div>
                   </div>
                   {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"> */}
@@ -2873,10 +2952,12 @@ export default function AdminPage() {
                   {/* <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2"> */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {/* Cuentas Regulares */}
+                    {/* Cuentas Regulares */}
                     {accounts.map((account) => {
                       const totalStock =
                         (account._count.accountStocks || 0) +
                         (account._count.profileStocks || 0);
+                      const isInfinite = account.deliveryMethod === "SUPPORT";
 
                       return (
                         <div
@@ -2898,6 +2979,14 @@ export default function AdminPage() {
                                 E
                               </span>
                             )}
+                            {isInfinite && (
+                              <span
+                                className="px-1 py-0.5 bg-cyan-500/20 text-cyan-300 rounded text-[8px]"
+                                title="Entrega por soporte — stock infinito"
+                              >
+                                ∞
+                              </span>
+                            )}
                           </div>
 
                           {/* Nombre */}
@@ -2914,23 +3003,35 @@ export default function AdminPage() {
                           </div>
 
                           {/* Stock */}
-                          <div
-                            className={`text-lg font-bold text-center mb-1 ${
-                              totalStock === 0
-                                ? "text-red-400"
-                                : totalStock <= 2
-                                  ? "text-yellow-400"
-                                  : totalStock <= 5
-                                    ? "text-blue-400"
-                                    : "text-emerald-400"
-                            }`}
-                          >
-                            {totalStock}
-                          </div>
-
-                          <div className="text-xs text-slate-500 text-center mb-1">
-                            unidades
-                          </div>
+                          {isInfinite ? (
+                            <>
+                              <div className="text-lg font-bold text-center mb-1 text-cyan-400">
+                                ∞
+                              </div>
+                              <div className="text-xs text-cyan-300/70 text-center mb-1">
+                                ilimitado
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div
+                                className={`text-lg font-bold text-center mb-1 ${
+                                  totalStock === 0
+                                    ? "text-red-400"
+                                    : totalStock <= 2
+                                      ? "text-yellow-400"
+                                      : totalStock <= 5
+                                        ? "text-blue-400"
+                                        : "text-emerald-400"
+                                }`}
+                              >
+                                {totalStock}
+                              </div>
+                              <div className="text-xs text-slate-500 text-center mb-1">
+                                unidades
+                              </div>
+                            </>
+                          )}
 
                           {/* Precio */}
                           <div className="text-sm text-emerald-400 text-center mb-1">
@@ -5206,6 +5307,21 @@ export default function AdminPage() {
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Activos
                           </Button>
+                          {/* <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setStatusFilter("BLOCKED")}
+                            className={`${
+                              statusFilter === "BLOCKED"
+                                ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
+                                : "bg-transparent border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                            }`}
+                          >
+                            <Ban className="w-4 h-4 mr-1" />
+                            Bloqueados
+                          </Button>
+                        </div>
+                        <div className="text-sm text-slate-400 mt-2"> */}
                           <Button
                             size="sm"
                             variant="outline"
@@ -5218,6 +5334,48 @@ export default function AdminPage() {
                           >
                             <Ban className="w-4 h-4 mr-1" />
                             Bloqueados
+                          </Button>
+                        </div>
+                        {/* NUEVO: Filtro de periodo de prueba */}
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setTrialFilter("ALL")}
+                            className={`${
+                              trialFilter === "ALL"
+                                ? "bg-purple-600 hover:bg-purple-700 text-white border-purple-600"
+                                : "bg-transparent border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white"
+                            }`}
+                          >
+                            <Activity className="w-4 h-4 mr-1" />
+                            Todos
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setTrialFilter("TRIAL_ACTIVE")}
+                            className={`${
+                              trialFilter === "TRIAL_ACTIVE"
+                                ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600"
+                                : "bg-transparent border-amber-600 text-amber-400 hover:bg-amber-600 hover:text-white"
+                            }`}
+                          >
+                            <Clock className="w-4 h-4 mr-1" />
+                            En periodo de prueba
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setTrialFilter("NO_TRIAL")}
+                            className={`${
+                              trialFilter === "NO_TRIAL"
+                                ? "bg-slate-600 hover:bg-slate-700 text-white border-slate-600"
+                                : "bg-transparent border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white"
+                            }`}
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Sin trial
                           </Button>
                         </div>
                         <div className="text-sm text-slate-400 mt-2">
@@ -5940,6 +6098,7 @@ export default function AdminPage() {
                                                     >
                                                       15 días
                                                     </SelectItem>
+
                                                     <SelectItem
                                                       value="30"
                                                       className="text-white text-xs"

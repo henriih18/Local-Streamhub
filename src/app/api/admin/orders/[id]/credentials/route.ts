@@ -84,16 +84,16 @@ export const PUT = requireAdmin(
         data: {
           // Solo actualizar campos proporcionados, y ENCRIPTARLOS
           ...(accountEmail && {
-            accountEmail: encrypt(sanitizeInput(accountEmail)),
+            accountEmail: encrypt(accountEmail),
           }),
           ...(accountPassword && {
-            accountPassword: encrypt(sanitizeInput(accountPassword)),
+            accountPassword: encrypt(accountPassword),
           }),
           ...(profileName && {
-            profileName: encrypt(sanitizeInput(profileName)),
+            profileName: encrypt(profileName),
           }),
           ...(profilePin && {
-            profilePin: encrypt(sanitizeInput(profilePin)),
+            profilePin: encrypt(profilePin),
           }),
           // Expirar la orden para que el comprador ya no vea credenciales
           status: "EXPIRED",

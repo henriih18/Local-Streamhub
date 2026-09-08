@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { escapeMarkdown } from "@/lib/telegram";
 import { timingSafeEqual } from "crypto";
+import { logger } from "@/lib/logger";
 
 const API = process.env.TELEGRAM_API_URL || "http://telegram-bot-api:8081";
 const TOKEN = process.env.TELEGRAM_RECHARGE_BOT_TOKEN || "";
@@ -99,7 +100,10 @@ export async function POST(req: NextRequest) {
     const topicData = await topicRes.json();
 
     if (!topicData.ok) {
-      console.error("[RechargeWebhook] createForumTopic failed:", topicData);
+      logger.error(
+        { context: "recharge_webhook", topicData },
+        "[RechargeWebhook] createForumTopic failed",
+      );
       await sendToUser(
         cbChatId,
         "❌ No se pudo crear la conversación. Verifica que el bot sea admin del grupo con Topics habilitados.",
@@ -135,7 +139,7 @@ export async function POST(req: NextRequest) {
         `\n\n` +
         `2️⃣ 📸 Envía aquí la *foto del comprobante* de la transferencia.\n` +
         `3️⃣ 📧 Escribe el *correo electrónico* de tu cuenta RiyoStream.\n\n` +
-        `✅ Un agente verificará tu pago y te abonará los créditos en breve.`
+        `✅ Un agente verificará tu pago y te abonará los créditos en breve.`,
     );
 
     return NextResponse.json({ ok: true });

@@ -231,8 +231,14 @@ export default function Home() {
       localStorage.removeItem("user");
       localStorage.removeItem("authToken");
 
-      fetch("/api/auth", { method: "POST" }).then(() => {
+      /* fetch("/api/auth", { method: "POST" }).then(() => {
         router.push("/login");
+      }); */
+      fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      }).finally(() => {
+        window.location.href = "/login";
       });
     },
 
@@ -446,7 +452,6 @@ export default function Home() {
       //console.log("fetchUserCredits ERROR:", error);
     }
   };
-  
 
   const fetchCartItems = async () => {
     try {
