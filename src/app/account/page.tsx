@@ -442,7 +442,7 @@ export default function AccountPage() {
                           ? "Vendedor"
                           : "Usuario"}
                     </Badge>
-                    {/* Nombre de Usuario */}
+                    {/* Nombre de Usuario 
                     {user.username && (
                       <div className="flex items-center gap-2 text-slate-400">
                         <User className="w-4 h-4 flex-shrink-0" />
@@ -453,7 +453,7 @@ export default function AccountPage() {
                           Usuario: {user.username}
                         </span>
                       </div>
-                    )}
+                    )}*/}
                     {/* Email */}
                     <div className="flex items-center gap-2 text-slate-400">
                       <Mail className="w-4 h-4 flex-shrink-0" />

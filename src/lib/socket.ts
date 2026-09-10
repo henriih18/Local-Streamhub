@@ -182,14 +182,6 @@ export const broadcastOrderUpdate = (io: Server, orderData: any) => {
   io.to("admins").emit("orderUpdated", orderData);
 };
 
-// Función para transmitir actualizaciones de mensajes
-export const broadcastMessageUpdate = (
-  io: Server,
-  userId: string,
-  unreadCount: number,
-) => {
-  io.to(`user:${userId}`).emit("messageUpdate", { unreadCount });
-};
 
 // Función para obtener la instancia de IO
 export const getIO = (): Server | null => {

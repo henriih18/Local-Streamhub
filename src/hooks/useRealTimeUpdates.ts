@@ -10,7 +10,6 @@ interface UseRealTimeUpdatesProps {
   onStockUpdate?: (data: any) => void;
   onAccountUpdate?: (data: any) => void;
   onOrderUpdate?: (data: any) => void;
-  onMessageUpdate?: (data: { unreadCount: number }) => void;
   onUserBlocked?: (data: any) => void;
   onCreditsUpdated?: (data: { newCredits: number }) => void;
 }
@@ -22,7 +21,6 @@ export function useRealTimeUpdates({
   onStockUpdate,
   onAccountUpdate,
   onOrderUpdate,
-  onMessageUpdate,
   onUserBlocked,
   onCreditsUpdated,
 }: UseRealTimeUpdatesProps) {
@@ -36,7 +34,6 @@ export function useRealTimeUpdates({
     const handleStockUpdated = (data) => onStockUpdate?.(data);
     const handleAccountUpdated = (data) => onAccountUpdate?.(data);
     const handleOrderUpdated = (data) => onOrderUpdate?.(data);
-    const handleMessageUpdate = (data) => onMessageUpdate?.(data);
     const handleUserBlocked = (data) => onUserBlocked?.(data);
     const handleCreditsUpdated = (data) => onCreditsUpdated?.(data);
 
@@ -45,7 +42,6 @@ export function useRealTimeUpdates({
     socket.on("stockUpdated", handleStockUpdated);
     socket.on("accountUpdated", handleAccountUpdated);
     socket.on("orderUpdated", handleOrderUpdated);
-    socket.on("messageUpdate", handleMessageUpdate);
     socket.on("userBlocked", handleUserBlocked);
     socket.on("creditsUpdated", handleCreditsUpdated);
 
@@ -57,7 +53,6 @@ export function useRealTimeUpdates({
       socket.off("stockUpdated", handleStockUpdated);
       socket.off("accountUpdated", handleAccountUpdated);
       socket.off("orderUpdated", handleOrderUpdated);
-      socket.off("messageUpdate", handleMessageUpdate);
       socket.off("userBlocked", handleUserBlocked);
       socket.off("creditsUpdated", handleCreditsUpdated);
     };
@@ -68,7 +63,6 @@ export function useRealTimeUpdates({
     onStockUpdate,
     onAccountUpdate,
     onOrderUpdate,
-    onMessageUpdate,
     onUserBlocked,
     onCreditsUpdated,
   ]);

@@ -195,9 +195,10 @@ export function sanitizeTelegramUsername(input: string): string {
 /**
  * Sanitiza nombres de usuario
  */
-export function sanitizeUsername(input: string): string {
+/* export function sanitizeUsername(input: string): string {
   if (typeof input !== "string") {
     return "";
+    
   }
 
   const inputTrimmed = input.trim();
@@ -210,7 +211,7 @@ export function sanitizeUsername(input: string): string {
   }
 
   return "";
-}
+} */
 
 /**
  * Sanitiza nombres completos

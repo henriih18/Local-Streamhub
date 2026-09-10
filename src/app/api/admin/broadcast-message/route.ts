@@ -36,7 +36,6 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       type: z.enum(["GENERAL", "WARNING", "SYSTEM_NOTIFICATION"], {
         message: "Tipo debe ser GENERAL, WARNING o SYSTEM_NOTIFICATION",
       }),
-      sendToTelegram: z.boolean().optional(),
     });
 
     const body = await request.json();
@@ -53,7 +52,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       );
     }
 
-    const { title, content, type, sendToTelegram } = validation.data;
+    const { title, content, type } = validation.data;
     const sanitizedTitle = sanitizeInput(title);
     const sanitizedContent = sanitizeHtml(content);
 
@@ -110,38 +109,32 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       ),
     );
 
-    // Enviar por Telegram si se solicitó
+    // Enviar por Telegram a todos los usuarios con telegramChatId (siempre)
     let telegramSent = 0;
     let telegramFailed = 0;
 
-    if (sendToTelegram) {
-      const telegramUsers = users.filter((u) => u.telegramChatId);
+    const telegramUsers = users.filter((u) => u.telegramChatId);
 
-      const typeEmoji =
-        type === "WARNING"
-          ? "⚠️"
-          : type === "SYSTEM_NOTIFICATION"
-            ? "🔔"
-            : "📢";
+    const typeEmoji =
+      type === "WARNING" ? "⚠️" : type === "SYSTEM_NOTIFICATION" ? "🔔" : "📢";
 
-      const telegramText = `${typeEmoji} *${sanitizedTitle}*\n\n${sanitizedContent}`;
+    const telegramText = `${typeEmoji} *${sanitizedTitle}*\n\n${sanitizedContent}`;
 
-      const results = await Promise.allSettled(
-        telegramUsers.map((u) =>
-          sendTelegramMessage(u.telegramChatId!, telegramText, {
-            parse_mode: "Markdown",
-          }),
-        ),
-      );
+    const results = await Promise.allSettled(
+      telegramUsers.map((u) =>
+        sendTelegramMessage(u.telegramChatId!, telegramText, {
+          parse_mode: "Markdown",
+        }),
+      ),
+    );
 
-      results.forEach((result) => {
-        if (result.status === "fulfilled" && result.value === true) {
-          telegramSent++;
-        } else {
-          telegramFailed++;
-        }
-      });
-    }
+    results.forEach((result) => {
+      if (result.status === "fulfilled" && result.value === true) {
+        telegramSent++;
+      } else {
+        telegramFailed++;
+      }
+    });
 
     return NextResponse.json({
       message: "Mensajes enviados exitosamente",
@@ -150,8 +143,8 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       type,
       title: sanitizedTitle,
       sender: adminUser.fullName || adminUser.email,
-      telegramSent: sendToTelegram ? telegramSent : 0,
-      telegramFailed: sendToTelegram ? telegramFailed : 0,
+      telegramSent,
+      telegramFailed,
     });
   } catch (error) {
     logger.error({ err: error }, "Error al enviar el mensaje de difusión.");

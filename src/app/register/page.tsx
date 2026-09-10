@@ -61,10 +61,15 @@ export default function RegisterPage() {
   const [telegramError, setTelegramError] = useState("");
   const telegramPollRef = useRef<NodeJS.Timeout | null>(null);
   const [referralCode, setReferralCode] = useState("");
-  const [referralStatus, setReferralStatus] = useState<{
+  /* const [referralStatus, setReferralStatus] = useState<{
     checked: boolean;
     valid: boolean;
     referrerUsername?: string;
+  }>({ checked: false, valid: false }); */
+  const [referralStatus, setReferralStatus] = useState<{
+    checked: boolean;
+    valid: boolean;
+    referrerName?: string;
   }>({ checked: false, valid: false });
   const [showReferralInput, setShowReferralInput] = useState(false);
   const [cameFromReferralLink, setCameFromReferralLink] = useState(false);
@@ -73,7 +78,7 @@ export default function RegisterPage() {
     fullName: "",
     email: "",
     phone: "",
-    username: "",
+    //username: "",
     password: "",
     confirmPassword: "",
   });
@@ -164,7 +169,8 @@ export default function RegisterPage() {
       setReferralStatus({
         checked: true,
         valid: data.valid,
-        referrerUsername: data.referrerUsername,
+        //referrerUsername: data.referrerUsername,
+        referrerName: data.referrerName,
       });
     } catch {
       setReferralStatus({ checked: false, valid: false });
@@ -256,10 +262,21 @@ export default function RegisterPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    /* if (!formData.fullName.trim()) {
+      newErrors.fullName = "El nombre completo es requerido";
+    } else if (formData.fullName.length < 3) {
+      newErrors.fullName = "El nombre debe tener al menos 3 caracteres";
+    } */
+
     if (!formData.fullName.trim()) {
       newErrors.fullName = "El nombre completo es requerido";
     } else if (formData.fullName.length < 3) {
       newErrors.fullName = "El nombre debe tener al menos 3 caracteres";
+    } else if (
+      !/^[A-Za-zÀ-ÖØ-öø-ÿ\s\-']{3,100}$/.test(formData.fullName.trim())
+    ) {
+      newErrors.fullName =
+        "Solo se permiten letras, espacios y acentos (3-100 caracteres)";
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -276,13 +293,15 @@ export default function RegisterPage() {
       newErrors.phone = "El teléfono no es válido";
     }
 
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    
+    /* const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
     if (!formData.username.trim()) {
       newErrors.username = "El nombre de usuario es requerido";
     } else if (!usernameRegex.test(formData.username)) {
       newErrors.username =
         "Solo letras, números y guiones bajos (3-20 caracteres)";
-    }
+    } */
+
 
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida";
@@ -324,7 +343,7 @@ export default function RegisterPage() {
           fullName: formData.fullName,
           email: formData.email,
           phone: formData.phone,
-          username: formData.username,
+          //username: formData.username,
           password: formData.password,
           telegramTempToken: telegramToken,
           country: "CO",
@@ -437,7 +456,7 @@ export default function RegisterPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Nombre Completo */}
+              {/* Nombre Completo 
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-slate-300">
                   Nombre Completo *
@@ -458,9 +477,67 @@ export default function RegisterPage() {
                 {errors.fullName && (
                   <p className="text-red-400 text-sm">{errors.fullName}</p>
                 )}
+              </div>*/}
+
+              {/* Nombre Completo */}
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="text-slate-300">
+                  Nombre *
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Juan Pérez"
+                    value={formData.fullName}
+                    onChange={(e) =>
+                      handleInputChange("fullName", e.target.value)
+                    }
+                    onBlur={() => handleBlur("fullName")}
+                    className={`bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 pr-10 ${
+                      errors.fullName ? "border-red-400" : ""
+                    } ${
+                      availability.fullName?.available === true
+                        ? "border-green-400"
+                        : ""
+                    } ${
+                      availability.fullName?.available === false
+                        ? "border-red-400"
+                        : ""
+                    }`}
+                    disabled={isLoading}
+                  />
+                  {availability.fullName?.checking && (
+                    <div className="absolute right-0 top-0 h-full px-3 flex items-center">
+                      <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                    </div>
+                  )}
+                  {availability.fullName?.available === true &&
+                    !availability.fullName?.checking && (
+                      <div className="absolute right-0 top-0 h-full px-3 flex items-center">
+                        <Check className="w-4 h-4 text-green-400" />
+                      </div>
+                    )}
+                  {availability.fullName?.available === false &&
+                    !availability.fullName?.checking && (
+                      <div className="absolute right-0 top-0 h-full px-3 flex items-center">
+                        <X className="w-4 h-4 text-red-400" />
+                      </div>
+                    )}
+                </div>
+                {errors.fullName && (
+                  <p className="text-red-400 text-sm">{errors.fullName}</p>
+                )}
+                {availability.fullName?.message && !errors.fullName && (
+                  <p
+                    className={`text-sm ${availability.fullName.available ? "text-green-400" : "text-red-400"}`}
+                  >
+                    {availability.fullName.message}
+                  </p>
+                )}
               </div>
 
-              {/* Nombre de Usuario */}
+              {/* Nombre de Usuario 
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-slate-300">
                   Nombre de Usuario *
@@ -516,7 +593,7 @@ export default function RegisterPage() {
                     {availability.username.message}
                   </p>
                 )}
-              </div>
+              </div>*/}
 
               {/* Email */}
               <div className="space-y-2">
@@ -824,7 +901,7 @@ export default function RegisterPage() {
                   <Gift className="h-5 w-5 text-emerald-400 flex-shrink-0" />
                   <div className="text-sm">
                     <p className="text-emerald-300 font-semibold">
-                      ¡Fuiste invitado por @{referralStatus.referrerUsername}!
+                      ¡Fuiste invitado por @{referralStatus.referrerName}!
                     </p>
                     {/* <p className="text-emerald-200/80 text-xs">
                       Estás ayudando a tu amigo a ganar créditos
@@ -878,7 +955,7 @@ export default function RegisterPage() {
                     </div>
                     {referralStatus.checked && referralStatus.valid && (
                       <p className="text-xs text-emerald-400">
-                        ✓ Invitado por @{referralStatus.referrerUsername}
+                        ✓ Invitado por @{referralStatus.referrerName}
                       </p>
                     )}
                     {referralStatus.checked &&

@@ -115,7 +115,7 @@ interface User {
   email: string;
   name: string | null;
 
-  username: string | null;
+  //username: string | null;
   credits: number;
   totalSpent: number;
   role: string;
@@ -479,7 +479,6 @@ export default function AdminPage() {
     title: "",
     content: "",
     type: "GENERAL" as "GENERAL" | "WARNING" | "SYSTEM_NOTIFICATION",
-    sendToTelegram: true,
   });
 
   // Estado de los menús desplegables de información de registro de usuario
@@ -2276,7 +2275,6 @@ export default function AdminPage() {
           title: broadcastMessage.title,
           content: broadcastMessage.content,
           type: broadcastMessage.type,
-          sendToTelegram: broadcastMessage.sendToTelegram,
         }),
       });
 
@@ -2290,7 +2288,6 @@ export default function AdminPage() {
           title: "",
           content: "",
           type: "GENERAL",
-          sendToTelegram: true,
         });
       } else {
         const errorData = await response.json();
@@ -2343,7 +2340,7 @@ export default function AdminPage() {
             ...prev,
             [userId]: data.registrationInfo || {
               fullName: "",
-              username: "",
+              //username: "",
               email: "",
               phone: "",
               credits: 0,
@@ -2376,17 +2373,17 @@ export default function AdminPage() {
 
     // Validaciones básicas
     if (!registrationInfo.fullName?.trim()) {
-      toast.error("El nombre completo es requerido");
+      toast.error("El nombre es requerido");
       return;
     }
     if (!registrationInfo.email?.trim()) {
       toast.error("El email es requerido");
       return;
     }
-    if (!registrationInfo.username?.trim()) {
+    /* if (!registrationInfo.username?.trim()) {
       toast.error("El nombre de usuario es requerido");
       return;
-    }
+    } */
     if (!registrationInfo.phone?.trim()) {
       toast.error("El telefono es necesario");
       return;
@@ -2402,7 +2399,7 @@ export default function AdminPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fullName: registrationInfo.fullName,
-            username: registrationInfo.username,
+            //username: registrationInfo.username,
             email: registrationInfo.email,
             phone: registrationInfo.phone,
             credits: registrationInfo.credits || 0,
@@ -5839,7 +5836,7 @@ export default function AdminPage() {
                                     )}
                                   </div>
 
-                                  {/* Nombre de Usuario */}
+                                  {/* Nombre de Usuario 
                                   <div className="space-y-2">
                                     <Label className="text-slate-300 text-sm">
                                       Nombre de Usuario
@@ -5867,7 +5864,7 @@ export default function AdminPage() {
                                           ?.username || "No especificado"}
                                       </p>
                                     )}
-                                  </div>
+                                  </div>*/}
 
                                   {/* Email */}
                                   <div className="space-y-2">
@@ -8849,26 +8846,14 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-slate-700/50 border border-slate-600 rounded-lg">
-                <input
-                  type="checkbox"
-                  id="broadcastTelegram"
-                  checked={broadcastMessage.sendToTelegram}
-                  onChange={(e) =>
-                    setBroadcastMessage({
-                      ...broadcastMessage,
-                      sendToTelegram: e.target.checked,
-                    })
-                  }
-                  className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-                />
-                <label
-                  htmlFor="broadcastTelegram"
-                  className="text-sm text-slate-300 cursor-pointer"
-                >
-                  También enviar por Telegram a los usuarios con Telegram
-                  vinculado
-                </label>
+              <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-blue-400 text-sm">
+                  <Info className="w-4 h-4" />
+                  <span>
+                    Este mensaje se enviará automáticamente por Telegram a todos
+                    los usuarios con Telegram vinculado.
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -8892,7 +8877,7 @@ export default function AdminPage() {
                     title: "",
                     content: "",
                     type: "GENERAL",
-                    sendToTelegram: true,
+                    //sendToTelegram: true,
                   });
                 }}
                 className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"

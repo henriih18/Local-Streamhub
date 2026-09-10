@@ -7,18 +7,27 @@ export const GET = requireAuth(async (request, user) => {
   try {
     const fullUser = await db.user.findUnique({
       where: { id: user.id },
-      select: { referralCode: true, username: true },
+      /* select: { referralCode: true, username: true }, */
+      select: { referralCode: true, fullName: true },
     });
 
     // === Si por algún motivo no tiene código, generar uno al vuelo ===
     if (!fullUser?.referralCode) {
-      const cleanUsername = (fullUser?.username || "USER")
+      /* const cleanUsername = (fullUser?.username || "USER")
         .replace(/[^a-zA-Z0-9]/g, "")
         .toUpperCase()
         .slice(0, 4);
       // 6 caracteres aleatorios hex
       const random = crypto.randomBytes(3).toString("hex").toUpperCase();
-      const newCode = `${cleanUsername}${random}`;
+      const newCode = `${cleanUsername}${random}`; */
+
+      const cleanName = (fullUser?.fullName || "USER")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase()
+        .slice(0, 4);
+      // 6 caracteres aleatorios hex
+      const random = crypto.randomBytes(3).toString("hex").toUpperCase();
+      const newCode = `${cleanName}${random}`;
 
       // Asegurar que sea único
       let attempts = 0;
@@ -28,7 +37,8 @@ export const GET = requireAuth(async (request, user) => {
         attempts < 10
       ) {
         const newRandom = Math.floor(100 + Math.random() * 900);
-        finalCode = `${cleanUsername}${newRandom}`;
+        //finalCode = `${cleanUsername}${newRandom}`;
+        finalCode = `${cleanName}${newRandom}`;
         attempts++;
       }
 

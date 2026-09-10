@@ -11,7 +11,7 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
       where: { id: user.id },
       select: {
         id: true,
-        username: true,
+        //username: true,
         email: true,
         role: true,
         credits: true,

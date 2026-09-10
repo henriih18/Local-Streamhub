@@ -5,14 +5,14 @@ import { db } from "@/lib/db";
 import {
   sanitizeFullName,
   sanitizePhone,
-  sanitizeUsername,
+  //sanitizeUsername,
 } from "@/lib/sanitize";
 import { rateLimit, getClientIP } from "@/lib/rate-limiter";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
 
-// === Función para generar código de referido único ===
-function generateReferralCode(username: string): string {
+// Función para generar código de referido único
+/* function generateReferralCode(username: string): string {
   const cleanUsername = username
     .replace(/[^a-zA-Z0-9]/g, "")
     .toUpperCase()
@@ -20,6 +20,16 @@ function generateReferralCode(username: string): string {
   // 6 caracteres aleatorios hex (anti-fuerza bruta)
   const random = crypto.randomBytes(3).toString("hex").toUpperCase();
   return `${cleanUsername}${random}`;
+} */
+
+function generateReferralCode(fullName: string): string {
+  const cleanName = fullName
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 4);
+  // 6 caracteres aleatorios hex (anti-fuerza bruta)
+  const random = crypto.randomBytes(3).toString("hex").toUpperCase();
+  return `${cleanName}${random}`;
 }
 
 const registerSchema = z
@@ -40,7 +50,7 @@ const registerSchema = z
       .trim()
       .min(10, "El teléfono debe tener al menos 10 dígitos")
       .max(20, "El teléfono no puede exceder 20 caracteres"),
-    username: z
+    /* username: z
       .string()
       .trim()
       .min(3, "El usuario debe tener al menos 3 caracteres")
@@ -48,7 +58,7 @@ const registerSchema = z
       .regex(
         /^[a-zA-Z0-9_]+$/,
         "Solo se permiten letras, números y guiones bajos",
-      ),
+      ), */
     password: z
       .string()
       .trim()
@@ -122,7 +132,7 @@ export async function POST(request: NextRequest) {
       fullName,
       email,
       phone,
-      username,
+      //username,
       password,
       telegramTempToken,
       country,
@@ -133,7 +143,7 @@ export async function POST(request: NextRequest) {
 
     const sanitizedFullName = sanitizeFullName(fullName);
     const sanitizedPhone = sanitizePhone(phone);
-    const sanitizedUsername = sanitizeUsername(username);
+    //const sanitizedUsername = sanitizeUsername(username);
 
     // ── Verificar token de Telegram ──
     const linkToken = await db.telegramLinkToken.findUnique({
@@ -207,12 +217,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingUsername = await db.user.findUnique({
+    /* const existingUsername = await db.user.findUnique({
       where: { username: sanitizedUsername },
     });
     if (existingUsername) {
       return NextResponse.json(
         { error: "Este nombre de usuario ya está en uso", field: "username" },
+        { status: 409 },
+      );
+    } */
+
+    const existingFullName = await db.user.findUnique({
+      where: { fullName: sanitizedFullName },
+    });
+    if (existingFullName) {
+      return NextResponse.json(
+        { error: "Este nombre ya está en uso", field: "fullName" },
         { status: 409 },
       );
     }
@@ -243,7 +263,7 @@ export async function POST(request: NextRequest) {
         fullName: sanitizedFullName,
         email: email.toLowerCase(),
         phone: finalPhone,
-        username: sanitizedUsername,
+        //username: sanitizedUsername,
         password: hashedPassword,
         telegramChatId: verifiedChatId,
         acceptMarketing,
@@ -261,7 +281,7 @@ export async function POST(request: NextRequest) {
         id: true,
         fullName: true,
         email: true,
-        username: true,
+        //username: true,
         country: true,
         language: true,
         createdAt: true,
@@ -269,7 +289,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Generar código de referido único para el nuevo usuario ===
-    let newReferralCode = generateReferralCode(sanitizedUsername);
+    /* let newReferralCode = generateReferralCode(sanitizedUsername);
     let attempts = 0;
     while (
       (await db.user.findUnique({
@@ -278,6 +298,18 @@ export async function POST(request: NextRequest) {
       attempts < 10
     ) {
       newReferralCode = generateReferralCode(sanitizedUsername);
+      attempts++;
+    } */
+
+    let newReferralCode = generateReferralCode(sanitizedFullName);
+    let attempts = 0;
+    while (
+      (await db.user.findUnique({
+        where: { referralCode: newReferralCode },
+      })) &&
+      attempts < 10
+    ) {
+      newReferralCode = generateReferralCode(sanitizedFullName);
       attempts++;
     }
 

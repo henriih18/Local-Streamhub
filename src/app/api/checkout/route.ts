@@ -60,7 +60,7 @@ async function processReferralReward(
         id: true,
         telegramChatId: true,
         fullName: true,
-        username: true,
+        //username: true,
         isActive: true,
         isBlocked: true,
       },

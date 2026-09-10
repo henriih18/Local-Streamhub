@@ -7,7 +7,6 @@ import {
   User,
   Menu,
   X,
-  MessageSquare,
   ShoppingCart,
   LogOut,
   ShieldCheck,
@@ -69,7 +68,6 @@ export default function Navigation({
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isAdmin = user?.role === "ADMIN";
-  const [unreadCount, setUnreadCount] = useState(0);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [loginNotified, setLoginNotified] = useState(false);
 
@@ -105,67 +103,6 @@ export default function Navigation({
     return () => clearTimeout(timer);
   }, [user]);
 
-  // Verificar estado de administrador
-  useEffect(() => {
-    if (user) {
-      fetchMessages();
-    }
-  }, [user]);
-
-  // Resetear loginNotified cuando cambia el usuario
-  useEffect(() => {
-    if (user) {
-      setLoginNotified(false);
-    }
-  }, [user]);
-
-  // Escuche las actualizaciones de mensajes
-  useEffect(() => {
-    const handleMessageUpdate = () => {
-      if (user) {
-        fetchMessages();
-      }
-    };
-
-    // Listen for custom message update event
-    window.addEventListener("messagesUpdated", handleMessageUpdate);
-
-    return () => {
-      window.removeEventListener("messagesUpdated", handleMessageUpdate);
-    };
-  }, [user]);
-
-  const fetchMessages = async () => {
-    try {
-      if (!user) return;
-
-      //const token = localStorage.getItem("authToken");
-      const response = await fetch("/api/messages", {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const newUnreadCount = data.unreadCount || 0;
-
-        // Actualice solo si el recuento cambió para evitar re-renderizaciones innecesarias
-        if (newUnreadCount !== unreadCount) {
-          setUnreadCount(newUnreadCount);
-          if (!loginNotified && newUnreadCount > 0) {
-            const messageText =
-              newUnreadCount === 1
-                ? "Tienes 1 mensaje de administración sin leer"
-                : `Tienes ${newUnreadCount} mensajes administración sin leer`;
-
-            toast.info(messageText);
-            setLoginNotified(true); // Marcar como notificado
-          }
-        }
-      }
-    } catch (error) {
-      //console.error('Navegación: Error al obtener mensajes:', error)
-    }
-  };
-
   const navigationItems = [
     {
       name: "Inicio",
@@ -179,12 +116,6 @@ export default function Navigation({
       name: "Mi Cuenta",
       href: "/account",
       icon: User,
-    });
-
-    navigationItems.push({
-      name: "Mensajes",
-      href: "/messages",
-      icon: MessageSquare,
     });
 
     if (isAdmin) {
@@ -249,16 +180,29 @@ export default function Navigation({
                     Stream
                   </span>
 
-                  {user && (
+                  {/* {user && (
                     <>
-                      {/* Pantallas grandes: nombre completo */}
+                      
                       <span className="hidden md:inline text-lg font-medium text-emerald-400">
                         | {user.username || user.email}
                       </span>
 
-                      {/* Pantallas pequeñas: nombre truncado */}
+                      
                       <span className="md:hidden text-lg font-medium text-emerald-400">
                         | {truncateUsername(user.username || user.email)}
+                      </span>
+                    </>
+                  )} */}
+                  {user && (
+                    <>
+                      {/* Pantallas grandes: nombre completo */}
+                      <span className="hidden md:inline text-lg font-medium text-emerald-400">
+                        | {user.fullName || user.email}
+                      </span>
+
+                      {/* Pantallas pequeñas: nombre truncado */}
+                      <span className="md:hidden text-lg font-medium text-emerald-400">
+                        | {truncateUsername(user.fullName || user.email)}
                       </span>
                     </>
                   )}
@@ -285,11 +229,6 @@ export default function Navigation({
                   >
                     <div className="relative">
                       <Icon className="w-4 h-4" />
-                      {item.name === "Mensajes" && unreadCount > 0 && (
-                        <Badge className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full p-0 flex items-center justify-center">
-                          {unreadCount > 9 ? "9+" : unreadCount}
-                        </Badge>
-                      )}
                     </div>
                     <span>{item.name}</span>
                   </Link>
@@ -384,11 +323,6 @@ export default function Navigation({
                   >
                     <div className="relative">
                       <Icon className="w-5 h-5" />
-                      {item.name === "Mensajes" && unreadCount > 0 && (
-                        <Badge className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full p-0 flex items-center justify-center">
-                          {unreadCount > 9 ? "9+" : unreadCount}
-                        </Badge>
-                      )}
                     </div>
                     <span>{item.name}</span>
                   </Link>

@@ -32,11 +32,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ valid: false });
     }
 
-    // Buscar el referidor (solo devuelve username, no datos sensibles)
+    /* // Buscar el referidor (solo devuelve username, no datos sensibles)
     const referrer = await db.user.findUnique({
       where: { referralCode: code },
       select: {
         username: true,
+        id: true,
+        isActive: true,
+        isBlocked: true,
+      },
+    }); */
+
+    // Buscar el referidor (solo devuelve fullName, no datos sensibles)
+    const referrer = await db.user.findUnique({
+      where: { referralCode: code },
+      select: {
+        fullName: true,
         id: true,
         isActive: true,
         isBlocked: true,
@@ -46,9 +57,14 @@ export async function GET(request: NextRequest) {
     // Solo validar si el referidor está activo y no bloqueado
     const isValid = !!referrer && referrer.isActive && !referrer.isBlocked;
 
-    return NextResponse.json({
+    /* return NextResponse.json({
       valid: isValid,
       referrerUsername: isValid ? referrer?.username : null,
+    }); */
+
+    return NextResponse.json({
+      valid: isValid,
+      referrerName: isValid ? referrer?.fullName : null,
     });
   } catch (error) {
     logger.error({ err: error }, "Error al validar código de referido");

@@ -90,7 +90,6 @@ const protectedApiRoutes = [
   "/api/cart",
   "/api/checkout",
   "/api/exclusive-cart",
-  "/api/messages",
   "/api/credit-recharge",
   "/api/expenses",
   "/api/user",

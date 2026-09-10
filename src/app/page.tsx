@@ -102,9 +102,6 @@ export default function Home() {
 
   useRealTimeUpdates({
     userId: user?.id,
-    onMessageUpdate: (_messageData) => {
-      window.dispatchEvent(new CustomEvent("messagesUpdated"));
-    },
 
     onStockUpdate: (stockData) => {
       setStreamingAccounts((prev) => {

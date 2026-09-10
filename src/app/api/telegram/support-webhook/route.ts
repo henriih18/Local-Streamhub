@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
       // 2. Verificar que el usuario de Telegram sea el dueño de la orden
       const telegramUser = await db.user.findFirst({
         where: { telegramChatId: chatId },
-        select: { id: true, fullName: true, email: true, username: true },
+        select: { id: true, fullName: true, email: true, /* username: true */ },
       });
 
       if (!telegramUser) {
@@ -246,7 +246,7 @@ export async function POST(req: NextRequest) {
       if (!isOwner) {
         const realOwner = await db.user.findUnique({
           where: { id: order.userId },
-          select: { fullName: true, email: true, username: true },
+          select: { fullName: true, email: true, /* username: true */ },
         });
         if (realOwner) {
           ownerInfo = `\n🔴 *Dueño real:* ${escapeMarkdown(realOwner.fullName)} (\`${escapeMarkdown(realOwner.email || "sin email")}\`)`;

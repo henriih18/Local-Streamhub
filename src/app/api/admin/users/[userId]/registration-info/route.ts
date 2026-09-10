@@ -28,7 +28,7 @@ export const GET = requireAdmin(
         select: {
           id: true,
           fullName: true,
-          username: true,
+          //username: true,
           email: true,
           phone: true,
           credits: true,
@@ -50,7 +50,7 @@ export const GET = requireAdmin(
       // Obtener información de registro (sin contraseña)
       const registrationInfo = {
         fullName: user.fullName || "",
-        username: user.username || "",
+        //username: user.username || "",
         email: user.email || "",
         phone: user.phone || "",
         credits: user.credits || 0,
@@ -67,7 +67,7 @@ export const GET = requireAdmin(
         user: {
           id: user.id,
           fullName: user.fullName,
-          username: user.username,
+          //username: user.username,
           email: user.email,
           phone: user.phone,
           credits: user.credits,
@@ -131,7 +131,7 @@ export const PUT = requireAdmin(
             .trim()
             .min(3, "El nombre debe tener al menos 3 caracteres")
             .max(100, "Nombre demasiado largo"),
-          username: z
+          /* username: z
             .string()
             .trim()
             .min(3, "El usuario debe tener al menos 3 caracteres")
@@ -139,7 +139,7 @@ export const PUT = requireAdmin(
             .regex(
               /^[a-zA-Z0-9_]+$/,
               "Solo se permiten letras, números y guiones bajos",
-            ),
+            ), */
           email: z
             .string()
             .trim()
@@ -214,7 +214,7 @@ export const PUT = requireAdmin(
 
       const {
         fullName,
-        username,
+        //username,
         email,
         phone,
         credits,
@@ -268,7 +268,7 @@ export const PUT = requireAdmin(
       }
 
       // Comprobar si el nombre de usuario ya está en uso por otro usuario
-      const usernameExists = await db.user.findFirst({
+      /* const usernameExists = await db.user.findFirst({
         where: {
           username: username,
           id: { not: userId },
@@ -283,6 +283,24 @@ export const PUT = requireAdmin(
           },
           { status: 400 },
         );
+      } */
+
+      // Comprobar si el nombre completo ya está en uso por otro usuario
+      const fullNameExists = await db.user.findFirst({
+        where: {
+          fullName: fullName.trim(),
+          id: { not: userId },
+        },
+      });
+
+      if (fullNameExists) {
+        return NextResponse.json(
+          {
+            error: "El nombre ya está en uso por otro usuario",
+            field: "fullName",
+          },
+          { status: 400 },
+        );
       }
 
       // Preparar datos de actualización
@@ -294,7 +312,7 @@ export const PUT = requireAdmin(
 
       const updateData: any = {
         fullName: fullName.trim(),
-        username: username.trim(),
+        //username: username.trim(),
         email: email.trim(),
         phone: phone ? phone.trim() : null,
         credits: creditsValue,
@@ -341,7 +359,7 @@ export const PUT = requireAdmin(
         select: {
           id: true,
           fullName: true,
-          username: true,
+          //username: true,
           email: true,
           phone: true,
           credits: true,
@@ -356,7 +374,7 @@ export const PUT = requireAdmin(
       if (io) {
         broadcastUserUpdate(io, userId, {
           fullName: updatedUser.fullName,
-          username: updatedUser.username,
+          //username: updatedUser.username,
           email: updatedUser.email,
           phone: updatedUser.phone,
           credits: updatedUser.credits,
@@ -371,7 +389,7 @@ export const PUT = requireAdmin(
           select: {
             telegramChatId: true,
             fullName: true,
-            username: true,
+            //username: true,
             email: true,
             vendorTrialEndsAt: true,
             vendorTrialQuota: true,
@@ -390,9 +408,11 @@ export const PUT = requireAdmin(
               }).format(new Date(fullUser.vendorTrialEndsAt))
             : "";
 
-          const nombre = escapeMarkdown(
+          /* const nombre = escapeMarkdown(
             fullUser.fullName || fullUser.username || fullUser.email,
-          );
+          ); */
+
+          const nombre = escapeMarkdown(fullUser.fullName || fullUser.email);
 
           let texto: string;
           if (tieneTrial) {
@@ -430,7 +450,7 @@ export const PUT = requireAdmin(
       if (error instanceof Error) {
         if (error.message.includes("Unique constraint")) {
           return NextResponse.json(
-            { error: "El email o nombre de usuario ya está en uso" },
+            { error: "El email o nombre ya está en uso" },
             { status: 400 },
           );
         }

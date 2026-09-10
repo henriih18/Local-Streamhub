@@ -17,8 +17,8 @@ model User {
   id                       String             @id @default(cuid())
   email                    String             @unique
   name                     String?
-  fullName                 String? // Nombre completo para registro
-  username                 String?            @unique // Nombre de usuario único
+  fullName                 String?            @unique
+  //username                 String?            @unique
   password                 String?
   role                     Role               @default(USER)
   avatar                   String?
