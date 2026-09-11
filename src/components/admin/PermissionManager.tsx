@@ -492,7 +492,7 @@ export default function PermissionManager({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    {/* <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         id="warningNotify"
@@ -511,7 +511,7 @@ export default function PermissionManager({
                         <Bell className="w-4 h-4 text-yellow-400" />
                         Notificar al usuario por mensaje interno
                       </Label>
-                    </div>
+                    </div> */}
                     <Button
                       onClick={handleWarning}
                       disabled={warningLoading}
@@ -628,7 +628,7 @@ export default function PermissionManager({
                         className="bg-slate-600 border-slate-500 text-white placeholder-slate-400"
                       />
                     </div>
-                    <div className="flex items-center space-x-2">
+                    {/* <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         id="blockNotify"
@@ -647,7 +647,7 @@ export default function PermissionManager({
                         <Bell className="w-4 h-4 text-yellow-400" />
                         Notificar al usuario por mensaje interno
                       </Label>
-                    </div>
+                    </div> */}
                     <Button
                       onClick={handleBlock}
                       disabled={blockLoading || user.isBlocked}
@@ -702,7 +702,7 @@ export default function PermissionManager({
                           rows={3}
                         />
                       </div>
-                      <div className="flex items-center space-x-2">
+                      {/* <div className="flex items-center space-x-2">
                         <input
                           type="checkbox"
                           id="unblockNotify"
@@ -721,7 +721,7 @@ export default function PermissionManager({
                           <Bell className="w-4 h-4 font-semibold text-yellow-400" />
                           Notificar al usuario por mensaje interno
                         </Label>
-                      </div>
+                      </div> */}
                       <Button
                         onClick={handleUnblock}
                         disabled={unblockLoading}

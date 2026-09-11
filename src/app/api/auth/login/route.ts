@@ -24,9 +24,7 @@ function getJwtSecret(): Uint8Array {
 
 export async function POST(request: NextRequest) {
   try {
-    /* =======================
-       RATE LIMIT (PRIMER PASO)
-    ======================= */
+    /*RATE LIMIT (PRIMER PASO)*/
     const ip = getClientIP(request);
     const limitCheck = await rateLimit({
       identifier: ip,
@@ -54,9 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /* =======================
-       VALIDACIÓN DE INPUT
-    ======================= */
+    /*VALIDACIÓN DE INPUT*/
     const body = await request.json();
     const validation = loginSchema.safeParse(body);
 
@@ -90,16 +86,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /* =======================
-       BUSCAR USUARIO
-    ======================= */
+    /* BUSCAR USUARIO */
     const user = await db.user.findUnique({
       where: { email },
       select: {
         id: true,
         email: true,
         fullName: true,
-        //username: true,
         password: true,
         role: true,
         isActive: true,
@@ -125,9 +118,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /* =======================
-       BLOQUEOS (UserBlock)
-    ======================= */
+    /* BLOQUEOS (UserBlock) */
     const userBlocks = await db.userBlock.findMany({
       where: { userId: user.id, isActive: true },
       orderBy: { createdAt: "desc" },
@@ -181,9 +172,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /* =======================
-       VALIDACIONES FINALES
-    ======================= */
+    /* VALIDACIONES FINALES */
     if (!user.isActive) {
       return NextResponse.json(
         { error: "Cuenta desactivada. Contacta con soporte.", field: "email" },
@@ -200,9 +189,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /* =======================
-       JWT
-    ======================= */
+    /* JWT */
 
     // SignJWT de jose (es async)
     const token = await new SignJWT({
@@ -214,12 +201,9 @@ export async function POST(request: NextRequest) {
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("24h")
-      /* .setExpirationTime("1m") // 1 minuto para pruebas */
       .sign(JWT_SECRET);
 
-    /* =======================
-       AUDITORÍA
-    ======================= */
+    /*AUDITORÍA*/
     await db.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date(), updatedAt: new Date() },
@@ -229,13 +213,10 @@ export async function POST(request: NextRequest) {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
-      //username: user.username,
       role: user.role,
       isActive: user.isActive,
       isBlocked: user.isBlocked,
       emailVerified: user.emailVerified,
-      //language: user.language,
-      //country: user.country,
       credits: user.credits,
       avatar: user.avatar,
       phone: user.phone,
@@ -246,7 +227,6 @@ export async function POST(request: NextRequest) {
     // Calcular la fecha exacta de expiración del token
     const tokenExpiresAt = new Date(
       Date.now() + 24 * 60 * 60 * 1000, // 24h en milisegundos
-      /* Date.now() + 1 * 60 * 1000, */ // 1 minuto para pruebas
     ).toISOString();
 
     const response = NextResponse.json({
@@ -258,11 +238,9 @@ export async function POST(request: NextRequest) {
     response.cookies.set("authToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      //secure: "auto" as any,
       sameSite: "strict",
       path: "/",
       maxAge: 60 * 60 * 24,
-      /* maxAge: 60, // 1 minuto para pruebas*/
     });
 
     return response;

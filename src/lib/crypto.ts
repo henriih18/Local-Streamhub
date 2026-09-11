@@ -40,7 +40,7 @@ export function encrypt(text: string): string {
     // Formato: iv (24 hex) + authTag (32 hex) + encrypted (variable)
     return iv.toString("hex") + authTag.toString("hex") + encrypted;
   } catch (error) {
-    logger.error({err: error},"Error al cifrar");
+    logger.error({ err: error }, "Error al cifrar");
     throw new Error("Error al cifrar datos");
   }
 }
@@ -70,7 +70,7 @@ export function decrypt(encryptedText: string): string {
 
     return decrypted;
   } catch (error) {
-    logger.error({err: error},"Error al descifrar");
+    logger.error({ err: error }, "Error al descifrar");
     throw new Error("Error al descifrar datos");
   }
 }

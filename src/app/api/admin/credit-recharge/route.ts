@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-
+import { sendTelegramMessage, escapeMarkdown } from "@/lib/telegram";
 import { requireAdmin } from "@/lib/auth";
 import { broadcastCreditsUpdate, getIO } from "@/lib/socket";
 import { rateLimit } from "@/lib/rate-limiter";
@@ -76,6 +76,13 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       db.user.update({
         where: { id: userId },
         data: { credits: { increment: amountNumber } },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          credits: true,
+          telegramChatId: true,
+        },
       }),
       db.creditRecharge.create({
         data: {
@@ -91,6 +98,38 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     const io = getIO();
     if (io) {
       broadcastCreditsUpdate(io, userId, targetUser.credits);
+    }
+
+    // Notificar al usuario por Telegram (si tiene chatId vinculado)
+    if (targetUser.telegramChatId) {
+      try {
+        const amountFormatted = amountNumber.toLocaleString("es-CO");
+        const newBalance = (targetUser.credits ?? 0).toLocaleString("es-CO");
+        const userName = escapeMarkdown(
+          targetUser.fullName || targetUser.email,
+        );
+
+        const tgText =
+          `💰 *Recarga de créditos recibida*\n\n` +
+          `¡Hola *${userName}*!\n\n` +
+          `✅ Se han acreditado *${amountFormatted}* créditos a tu cuenta.\n` +
+          `💼 Nuevo saldo: *${newBalance}* créditos\n\n` +
+          `¡Gracias por tu confianza! 🙌`;
+
+        await sendTelegramMessage(targetUser.telegramChatId, tgText, {
+          parse_mode: "Markdown",
+        });
+      } catch (telegramError) {
+        // Si falla Telegram, no romper el flujo de recarga
+        logger.error(
+          {
+            err: telegramError,
+            userId,
+            context: "credit_recharge_telegram_notify",
+          },
+          "No se pudo enviar la notificación de recarga por Telegram (no bloquea la recarga)",
+        );
+      }
     }
 
     return NextResponse.json({ user: targetUser, creditRecharge });

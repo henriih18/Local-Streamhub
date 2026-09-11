@@ -162,7 +162,7 @@ export function encryptStockCredentials(stockData: any): any {
       try {
         encrypted[field] = encrypt(value);
       } catch (error) {
-        logger.error({err: error},`Error cifrando stock`);
+        logger.error({ err: error }, `Error cifrando stock`);
       }
     }
   });

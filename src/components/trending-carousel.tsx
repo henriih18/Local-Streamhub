@@ -35,22 +35,6 @@ export function TrendingCarousel() {
   const [items, setItems] = useState<TrendingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<TrendingItem | null>(null);
-  /* const [emblaRef, emblaApi] = useEmblaCarousel(
-    {
-      loop: true,
-      align: "start",
-      slidesToScroll: 2,
-      skipSnaps: false,
-      dragFree: true,
-    },
-    [
-      Autoplay({
-        delay: 4000,
-        stopOnInteraction: true,
-        stopOnMouseEnter: true,
-      }),
-    ],
-  ); */
 
   const autoplayRef = useRef(
     Autoplay({
@@ -92,9 +76,6 @@ export function TrendingCarousel() {
   // Reinitialize carousel when modal opens/closes to fix intermittent layout shifts
   useEffect(() => {
     if (emblaApi) {
-      // Al cerrar el modal, espera a que termine la animación de salida (200ms)
-      // y la barra de scroll del navegador se restaure antes de recalcular.
-      // Al abrir, recalcula inmediatamente (0ms).
       const delay = selectedItem ? 0 : 250;
 
       const timer = setTimeout(() => {
@@ -239,11 +220,6 @@ export function TrendingCarousel() {
                           <h3 className="text-white text-sm font-bold leading-tight line-clamp-2 mt-auto">
                             {item.title}
                           </h3>
-                          {/* {item.year && (
-                            <span className="text-slate-400 text-[10px]">
-                              {item.year}
-                            </span>
-                          )} */}
                         </div>
 
                         {/* Eye icon */}

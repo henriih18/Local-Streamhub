@@ -22,7 +22,7 @@ class StockConflictError extends Error {
   }
 }
 
-// === NUEVO: Procesar recompensa de referido al completar primera compra ===
+// Procesar recompensa de referido al completar primera compra
 async function processReferralReward(
   userId: string,
   orderId: string,
@@ -60,7 +60,6 @@ async function processReferralReward(
         id: true,
         telegramChatId: true,
         fullName: true,
-        //username: true,
         isActive: true,
         isBlocked: true,
       },
@@ -74,9 +73,17 @@ async function processReferralReward(
       return;
     }
 
-    // Calcular recompensa (10% del total)
-    const REWARD_PERCENT = 10;
-    const reward = Math.round(orderTotal * (REWARD_PERCENT / 100));
+    // Leer configuración del sistema de referidos
+    const settings = await db.referralSetting.findFirst();
+
+    // Si no hay settings o el sistema está desactivado, salir
+    if (!settings || !settings.isEnabled) return;
+
+    // Calcular recompensa con el porcentaje configurado
+    const rewardPercent = settings.rewardPercent;
+    const reward = Math.round(orderTotal * (rewardPercent / 100));
+
+    if (reward <= 0) return;
 
     if (reward <= 0) return;
 
@@ -225,9 +232,9 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
           throw new Error("Cantidad inválida");
         }
 
-        // ================= STREAMING =================
+        // STREAMING
         if (streamingAccount) {
-          // ---------- ENTREGA POR SOPORTE (stock infinito) ----------
+          //ENTREGA POR SOPORTE (stock infinito)
           if (streamingAccount.deliveryMethod === "SUPPORT") {
             for (let i = 0; i < quantity; i++) {
               createdOrders.push(
@@ -235,8 +242,6 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
                   data: {
                     userId: user.id,
                     streamingAccountId: streamingAccount.id,
-                    // Sin asignar stock de la BD
-                    // Sin credenciales (accountEmail, etc. quedan null)
                     quantity: 1,
                     saleType:
                       saleType === "PROFILES"
@@ -252,7 +257,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
               );
             }
           }
-          // ---------- PROFILES (entrega automática) ----------
+          // PROFILES (entrega automática)
           else if (saleType === "PROFILES") {
             const candidates = await tx.accountProfile.findMany({
               where: {
@@ -313,7 +318,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
             }
           }
 
-          // ---------- FULL ACCOUNTS ----------
+          // FULL ACCOUNTS
           else {
             const candidates = await tx.accountStock.findMany({
               where: {
@@ -373,9 +378,9 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
           }
         }
 
-        // ================= EXCLUSIVE =================
+        // EXCLUSIVE
         else if (exclusiveAccount) {
-          // ---------- ENTREGA POR SOPORTE (stock infinito) ----------
+          //ENTREGA POR SOPORTE (stock infinito)
           if (exclusiveAccount.deliveryMethod === "SUPPORT") {
             for (let i = 0; i < quantity; i++) {
               createdOrders.push(
@@ -476,7 +481,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       return { createdOrders, newCredits: updatedUser?.credits };
     });
 
-    // === NUEVO: Procesar recompensa de referido si corresponde ===
+    // Procesar recompensa de referido si corresponde
     // Fire-and-forget (no bloquea la respuesta al usuario)
     if (orders?.createdOrders && orders.createdOrders.length > 0) {
       const totalComprado = orders.createdOrders.reduce(
@@ -596,7 +601,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 
           let message: string;
 
-          // ══════ MENSAJE PARA ENTREGA POR SOPORTE ══════
+          // MENSAJE PARA ENTREGA POR SOPORTE
           if (orderDeliveryMethod === "SUPPORT") {
             const supportBotUsername = "riyostream_soporte_bot";
             // Deep link con el ID de la orden → el bot lo recibe automáticamente
@@ -609,7 +614,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
             message += `Toca el botón de abajo para iniciar el chat con soporte y recibir tus credenciales:`;
             message += `\n[👉 Abrir chat de soporte](${supportUrl})`;
           } else if (isExclusive) {
-            // ══════ MENSAJE PREMIUM PARA CUENTAS EXCLUSIVAS ══════
+            //MENSAJE PREMIUM PARA CUENTAS EXCLUSIVAS
             message = `👑✨ *¡COMPRA EXCLUSIVA EXITOSA!* ✨👑\n\n`;
             message += `💎 *${escapeMarkdown(serviceName)}*\n`;
             message += `🌟 *Cuenta Exclusiva* — ${accountType}\n`;
@@ -631,7 +636,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
             message += `📝 Puedes ver tus credenciales en tu panel *"Mi Cuenta".*\n\n`;
             message += `⚠️ *IMPORTANTE:* No compartas estas credenciales. El uso compartido puede resultar en el bloqueo permanente de tu cuenta.`;
           } else {
-            // ══════ MENSAJE NORMAL PARA CUENTAS REGULARES ══════
+            // MENSAJE NORMAL PARA CUENTAS REGULARES
             message = `🎉 *¡Compra exitosa!*\n\n`;
             message += `📺 *${escapeMarkdown(serviceName)}*\n`;
             message += `📦 Tipo: ${accountType}\n`;

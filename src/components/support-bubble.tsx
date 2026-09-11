@@ -153,9 +153,7 @@ export function SupportBubble() {
                               : "SMS"}
                       </Badge>
                     </div>
-                    {/* <p className="text-emerald-400 font-medium text-sm mb-1">
-                      {contact.number}
-                    </p> */}
+
                     {contact.description && (
                       <p className="text-slate-400 text-xs truncate">
                         {contact.description}

@@ -115,7 +115,6 @@ interface User {
   email: string;
   name: string | null;
 
-  //username: string | null;
   credits: number;
   totalSpent: number;
   role: string;
@@ -343,22 +342,14 @@ interface AdvancedStats {
 
 export default function AdminPage() {
   const router = useRouter();
-  const {
-    stats: realTimeStats,
-    isConnected,
-    lastUpdate,
-    refreshStats,
-  } = useRealTimeStats();
+  const { stats: realTimeStats, isConnected, lastUpdate } = useRealTimeStats();
 
-  // === Tiempo real: escuchar stockUpdated para actualizar el inventario ===
+  // Tiempo real: escuchar stockUpdated para actualizar el inventario
   const handleStockUpdate = useCallback((data: any) => {
-    // data = { accountId, accountType: "regular"|"exclusive", type: "FULL"|"PROFILES", newStock }
-
     if (data.accountType === "regular") {
       setAccounts((prev) =>
         prev.map((acc) => {
           if (acc.id !== data.accountId) return acc;
-          // Solo actualizar el tipo de stock que cambió
           const newAccountStocks =
             data.type === "FULL" ? data.newStock : acc._count.accountStocks;
           const newProfileStocks =
@@ -377,13 +368,9 @@ export default function AdminPage() {
       setExclusiveAccounts((prev) =>
         prev.map((acc) => {
           if (acc.id !== data.accountId) return acc;
-          // Para exclusivas, exclusiveStocks es un array en el estado (no _count)
-          // Si la cantidad cambió, lo más seguro es re-fetchear (ver nota abajo)
           return acc;
         }),
       );
-      // Para cuentas exclusivas, los stocks vienen como array en el estado,
-      // no como _count. Hacemos un re-fetch silencioso para mantener consistencia.
       refreshInventorySilent();
     }
   }, []);
@@ -425,18 +412,14 @@ export default function AdminPage() {
     Set<string>
   >(new Set());
 
-  // Estados del carrito
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
-
   const [orderCurrentPage, setOrderCurrentPage] = useState(1);
   const [orderTotalPages, setOrderTotalPages] = useState(1);
   const [totalOrdersCount, setTotalOrdersCount] = useState(0);
   const [ordersPage, setOrdersPage] = useState<Order[]>([]);
   const ORDERS_PER_PAGE = 30;
-
-  // Estados del historial de recarga
   const [showRechargeHistory, setShowRechargeHistory] = useState(false);
   const [rechargeHistory, setRechargeHistory] = useState<any[]>([]);
   const [loadingRechargeHistory, setLoadingRechargeHistory] = useState(false);
@@ -444,7 +427,6 @@ export default function AdminPage() {
   const [userActionCounts, setUserActionCounts] = useState<
     Record<string, number>
   >({});
-
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [trialFilter, setTrialFilter] = useState<
@@ -455,13 +437,11 @@ export default function AdminPage() {
   const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [usersPage, setUsersPage] = useState<User[]>([]);
   const USERS_PER_PAGE = 10;
-
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [selectedInventoryAccount, setSelectedInventoryAccount] =
     useState<any>(null);
   const [inventoryStocks, setInventoryStocks] = useState<any[]>([]);
   const [inventoryLoading, setInventoryLoading] = useState(false);
-
   const [selectedUsersForOffer, setSelectedUsersForOffer] = useState<string[]>(
     [],
   );
@@ -473,7 +453,6 @@ export default function AdminPage() {
   const [showPermissionManager, setShowPermissionManager] = useState(false);
   const [selectedUserForPermissions, setSelectedUserForPermissions] =
     useState<User | null>(null);
-
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState({
     title: "",
@@ -526,7 +505,6 @@ export default function AdminPage() {
   });
 
   const [uploadingImage, setUploadingImage] = useState(false);
-
   const [newSpecialOffer, setNewSpecialOffer] = useState({
     streamingAccountId: "",
     discountPercentage: "",
@@ -609,6 +587,17 @@ export default function AdminPage() {
   });
 
   const [showBannerModal, setShowBannerModal] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [referralSettings, setReferralSettings] = useState({
+    isEnabled: true,
+    rewardPercent: 10,
+  });
+  const [referralStats, setReferralStats] = useState({
+    totalRewarded: 0,
+    totalCreditsEarned: 0,
+    pendingCount: 0,
+  });
+  const [loadingReferral, setLoadingReferral] = useState(false);
   const [bannerData, setBannerData] = useState({
     text: "",
     isActive: true,
@@ -625,11 +614,9 @@ export default function AdminPage() {
   }>({});
   const [showVendorPricingModal, setShowVendorPricingModal] = useState(false);
   const [loadingVendorPricing, setLoadingVendorPricing] = useState(false);
-
   const [enabledVendorInputs, setEnabledVendorInputs] = useState<Set<string>>(
     new Set(),
   );
-
   const [applyToAllUsers, setApplyToAllUsers] = useState(false);
   const [rechargingUserId, setRechargingUserId] = useState<string | null>(null);
   const [isRecharging, setIsRecharging] = useState(false);
@@ -643,7 +630,6 @@ export default function AdminPage() {
   };
 
   // Función para actualizar el inventario manualmente
-  // Función para actualizar el inventario manualmente (con toast)
   const refreshInventory = async () => {
     try {
       if (!checkAuth()) return;
@@ -664,7 +650,6 @@ export default function AdminPage() {
         setExclusiveAccounts(exclusiveData);
       }
 
-      // Cargar precios de vendedor una sola vez si alguna petición fue exitosa
       if (accountsRes.ok || exclusiveRes.ok) {
         loadVendorPricing();
       }
@@ -675,7 +660,6 @@ export default function AdminPage() {
     }
   };
 
-  // Re-fetch silencioso del inventario (sin toast) — usado por socket events
   const refreshInventorySilent = async () => {
     try {
       if (!checkAuth()) return;
@@ -704,7 +688,6 @@ export default function AdminPage() {
     try {
       if (!checkAuth()) return;
 
-      // Simplemente recargar las estadísticas del backend
       await fetchStatsData(true);
 
       toast.success("Las métricas de negocio se han actualizado correctamente");
@@ -716,6 +699,12 @@ export default function AdminPage() {
   const handleSaveBanner = async () => {
     if (!bannerData.text.trim()) {
       toast.error("El texto del banner no puede estar vacío");
+      return;
+    }
+    if (bannerData.text.length > 190) {
+      toast.error(
+        `El texto del banner es demasiado largo (${bannerData.text.length} caracteres). Máximo: 190.`,
+      );
       return;
     }
 
@@ -767,6 +756,65 @@ export default function AdminPage() {
     }
   };
 
+  // Funciones para configuración de referidos
+  const loadReferralSettings = async () => {
+    try {
+      const response = await adminFetch("/api/admin/referral-settings");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings) {
+          setReferralSettings({
+            isEnabled: data.settings.isEnabled,
+            rewardPercent: data.settings.rewardPercent,
+          });
+        }
+        if (data.stats) {
+          setReferralStats({
+            totalRewarded: data.stats.totalRewarded || 0,
+            totalCreditsEarned: data.stats.totalCreditsEarned || 0,
+            pendingCount: data.stats.pendingCount || 0,
+          });
+        }
+      }
+    } catch (error) {
+      toast.error("Error al cargar la configuración de referidos");
+    }
+  };
+
+  const handleSaveReferralSettings = async () => {
+    if (
+      referralSettings.rewardPercent < 0 ||
+      referralSettings.rewardPercent > 100
+    ) {
+      toast.error("El porcentaje debe estar entre 0 y 100");
+      return;
+    }
+
+    setLoadingReferral(true);
+    try {
+      const response = await adminFetch("/api/admin/referral-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isEnabled: referralSettings.isEnabled,
+          rewardPercent: referralSettings.rewardPercent,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("Configuración de referidos actualizada");
+        setShowReferralModal(false);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Error al guardar la configuración");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    } finally {
+      setLoadingReferral(false);
+    }
+  };
+
   const loadBannerData = async () => {
     try {
       const response = await fetch("/api/announcement");
@@ -798,8 +846,6 @@ export default function AdminPage() {
 
         if (!isAdmin) {
           toast.error("No tienes permisos de administrador");
-          // Redirigir a los usuarios no administradores inmediatamente
-
           router.replace("/");
           return;
         }
@@ -808,7 +854,6 @@ export default function AdminPage() {
         setLoading(false);
       } catch (error) {
         localStorage.removeItem("user");
-
         router.replace("/login");
       }
     } else {
@@ -861,7 +906,6 @@ export default function AdminPage() {
   }, []);
 
   const handleLogin = () => {
-    // Redirigir a la página de inicio de sesión o mostrar el modal de inicio de sesión
     window.location.href = "/login";
   };
 
@@ -949,7 +993,6 @@ export default function AdminPage() {
     if (activeTab === "usuarios") {
       setUserCurrentPage((prev) => {
         if (prev !== 1) return 1; // Se dispara el useEffect de userCurrentPage
-        // Si ya estaba en 1, no cambia → forzamos fetch manualmente
         fetchUsersData();
         return 1;
       });
@@ -1039,8 +1082,6 @@ export default function AdminPage() {
 
   const filteredOrders = useMemo(() => {
     let result = ordersPage;
-
-    // Filtro por expiración (cliente - dinámico)
     // Filtro por expiración (cliente - dinámico)
     if (expirationFilter !== "all") {
       result = result.filter((order) => {
@@ -1052,7 +1093,6 @@ export default function AdminPage() {
       });
     }
 
-    // Filtro frontend: email desencriptado (no se puede buscar en BD) y/o ID (fallback)
     if (orderSearchQuery.trim() !== "") {
       const searchQuery = orderSearchQuery.toLowerCase().trim();
       result = result.filter((order) => {
@@ -1063,7 +1103,7 @@ export default function AdminPage() {
         ) {
           return true;
         }
-        // Por ID de la orden (si el backend no filtró, ej: búsqueda por email)
+        // Por ID de la orden (si el backend no filtró
         if (order.id && order.id.toLowerCase().includes(searchQuery)) {
           return true;
         }
@@ -1376,7 +1416,6 @@ export default function AdminPage() {
       });
 
       // Si el texto parece un ID de compra (cuid), enviarlo al backend para buscar en TODAS las órdenes
-      // El email está encriptado en la BD, así que se filtra en el frontend
       const search = orderSearchQuery.trim();
       if (search && /^c[a-z0-9]{8,}$/i.test(search)) {
         params.append("search", search);
@@ -1497,7 +1536,6 @@ export default function AdminPage() {
   };
 
   const handleCreateStreamingType = async () => {
-    // Validar que se haya subido una imagen
     if (!newStreamingType.name) {
       toast.error("El nombre es requerido");
       return;
@@ -1523,7 +1561,6 @@ export default function AdminPage() {
           imageUrl: "",
           color: "#3B82F6",
         });
-        //fetchData();
         await fetchTypesData();
       } else {
         const error = await response.json();
@@ -1555,7 +1592,6 @@ export default function AdminPage() {
           saleType: "FULL",
           deliveryMethod: "AUTOMATIC" as "AUTOMATIC" | "SUPPORT",
         });
-        //fetchData();
         await fetchAccountsData();
       } else {
         toast.error("Error al crear cuenta");
@@ -1588,7 +1624,6 @@ export default function AdminPage() {
           pin: "",
           notes: "",
         });
-        //fetchData();
         await Promise.all([fetchAccountsData(), fetchStockData(user)]);
         refreshInventory();
       } else {
@@ -1639,7 +1674,6 @@ export default function AdminPage() {
           pin: "",
           notes: "",
         });
-        //fetchData();
         await Promise.all([fetchExclusiveData(), fetchStockData(user)]);
         refreshInventory();
       } else {
@@ -2266,6 +2300,18 @@ export default function AdminPage() {
       toast.error("Por favor completa el título y el contenido del mensaje");
       return;
     }
+    if (broadcastMessage.title.length > 190) {
+      toast.error(
+        `El título es demasiado largo (${broadcastMessage.title.length} caracteres). Máximo: 190.`,
+      );
+      return;
+    }
+    if (broadcastMessage.content.length > 190) {
+      toast.error(
+        `El contenido es demasiado largo (${broadcastMessage.content.length} caracteres). Máximo: 190.`,
+      );
+      return;
+    }
 
     try {
       const response = await adminFetch("/api/admin/broadcast-message", {
@@ -2340,7 +2386,6 @@ export default function AdminPage() {
             ...prev,
             [userId]: data.registrationInfo || {
               fullName: "",
-              //username: "",
               email: "",
               phone: "",
               credits: 0,
@@ -2380,10 +2425,6 @@ export default function AdminPage() {
       toast.error("El email es requerido");
       return;
     }
-    /* if (!registrationInfo.username?.trim()) {
-      toast.error("El nombre de usuario es requerido");
-      return;
-    } */
     if (!registrationInfo.phone?.trim()) {
       toast.error("El telefono es necesario");
       return;
@@ -2399,7 +2440,6 @@ export default function AdminPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fullName: registrationInfo.fullName,
-            //username: registrationInfo.username,
             email: registrationInfo.email,
             phone: registrationInfo.phone,
             credits: registrationInfo.credits || 0,
@@ -2687,16 +2727,28 @@ export default function AdminPage() {
                   Gestiona tu sistema de streaming
                 </p>
               </div>
-              <Button
-                onClick={async () => {
-                  await loadBannerData();
-                  setShowBannerModal(true);
-                }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Configurar Banner
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={async () => {
+                    await loadReferralSettings();
+                    setShowReferralModal(true);
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <Gift className="w-4 h-4 mr-2" />
+                  Configurar Referidos
+                </Button>
+                <Button
+                  onClick={async () => {
+                    await loadBannerData();
+                    setShowBannerModal(true);
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configurar Banner
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -2824,7 +2876,6 @@ export default function AdminPage() {
                       </Button> */}
                     </div>
                   </div>
-                  {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"> */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Card className="bg-slate-800/50 border-slate-700">
                       <CardContent className="p-6">
@@ -2946,9 +2997,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2"> */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {/* Cuentas Regulares */}
                     {/* Cuentas Regulares */}
                     {accounts.map((account) => {
                       const totalStock =
@@ -3424,15 +3473,6 @@ export default function AdminPage() {
                                   {stock.type && ` · ${stock.type}`}
                                 </p>
                               </div>
-                              {/* <div>
-                                {stock.isAvailable ? (
-                                  <Badge className="bg-green-600">
-                                    Disponible
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-red-600">Vendida</Badge>
-                                )}
-                              </div> */}
                             </div>
                           ))}
                         </div>
@@ -5304,21 +5344,6 @@ export default function AdminPage() {
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Activos
                           </Button>
-                          {/* <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setStatusFilter("BLOCKED")}
-                            className={`${
-                              statusFilter === "BLOCKED"
-                                ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
-                                : "bg-transparent border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                            }`}
-                          >
-                            <Ban className="w-4 h-4 mr-1" />
-                            Bloqueados
-                          </Button>
-                        </div>
-                        <div className="text-sm text-slate-400 mt-2"> */}
                           <Button
                             size="sm"
                             variant="outline"
@@ -5435,13 +5460,6 @@ export default function AdminPage() {
 
                   <CardContent>
                     <div className="space-y-4">
-                      {/* {filteredUsers.map((user) => ( */}
-                      {/* {users
-                        .filter(
-                          (user) =>
-                            roleFilter === "ALL" || user.role === roleFilter,
-                        )
-                        .map((user) => ( */}
                       {filteredUsers.map((user) => (
                         <div
                           key={user.id}
@@ -5836,36 +5854,6 @@ export default function AdminPage() {
                                     )}
                                   </div>
 
-                                  {/* Nombre de Usuario 
-                                  <div className="space-y-2">
-                                    <Label className="text-slate-300 text-sm">
-                                      Nombre de Usuario
-                                    </Label>
-                                    {editingUserRegistration === user.id ? (
-                                      <Input
-                                        disabled
-                                        value={
-                                          userRegistrationData[user.id]
-                                            ?.username || ""
-                                        }
-                                        onChange={(e) =>
-                                          handleRegistrationInputChange(
-                                            user.id,
-                                            "username",
-                                            e.target.value,
-                                          )
-                                        }
-                                        className="bg-slate-700 border-slate-600 text-white"
-                                        placeholder="Nombre de usuario"
-                                      />
-                                    ) : (
-                                      <p className="text-white bg-slate-700/50 p-2 rounded">
-                                        {userRegistrationData[user.id]
-                                          ?.username || "No especificado"}
-                                      </p>
-                                    )}
-                                  </div>*/}
-
                                   {/* Email */}
                                   <div className="space-y-2">
                                     <Label className="text-slate-300 text-sm">
@@ -6084,10 +6072,10 @@ export default function AdminPage() {
                                                   </SelectTrigger>
                                                   <SelectContent className="bg-slate-800 border-slate-700">
                                                     <SelectItem
-                                                      value="1"
+                                                      value="8"
                                                       className="text-white text-xs"
                                                     >
-                                                      1 día
+                                                      8 días
                                                     </SelectItem>
                                                     <SelectItem
                                                       value="15"
@@ -8781,8 +8769,23 @@ export default function AdminPage() {
                     })
                   }
                   placeholder="Ej: Mantenimiento Programado"
-                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                  className={`bg-slate-700 text-white placeholder-slate-400 ${
+                    broadcastMessage.title.length > 190
+                      ? "border-red-500 border-2"
+                      : "border-slate-600"
+                  }`}
                 />
+                <div className="flex items-center justify-end mt-1">
+                  <span
+                    className={`text-xs font-mono ${
+                      broadcastMessage.title.length > 190
+                        ? "text-red-400"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    {broadcastMessage.title.length} / 190
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -8832,8 +8835,28 @@ export default function AdminPage() {
                   }
                   placeholder="Escribe aquí el contenido del mensaje que será enviado a todos los usuarios..."
                   rows={6}
-                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 resize-none"
+                  className={`bg-slate-700 text-white placeholder-slate-400 resize-none ${
+                    broadcastMessage.content.length > 190
+                      ? "border-red-500 border-2"
+                      : "border-slate-600"
+                  }`}
                 />
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-slate-500">
+                    Máximo 190 caracteres (limitación actual de la DB)
+                  </p>
+                  <span
+                    className={`text-xs font-mono ${
+                      broadcastMessage.content.length > 190
+                        ? "text-red-400"
+                        : broadcastMessage.content.length > 150
+                          ? "text-yellow-400"
+                          : "text-slate-400"
+                    }`}
+                  >
+                    {broadcastMessage.content.length} / 190
+                  </span>
+                </div>
               </div>
 
               <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
@@ -9069,6 +9092,151 @@ export default function AdminPage() {
           />
         )}
 
+        {/* === Modal: Configurar Referidos === */}
+        <Dialog open={showReferralModal} onOpenChange={setShowReferralModal}>
+          <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <Gift className="w-5 h-5 text-purple-400" />
+                Configurar Referidos
+              </DialogTitle>
+              <DialogDescription className="text-slate-400">
+                Activa o desactiva el sistema y configura el porcentaje de
+                recompensa
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 mt-2">
+              {/* Estado del sistema */}
+              <div className="space-y-2">
+                <Label className="text-slate-300 text-sm font-medium">
+                  Estado del sistema
+                </Label>
+                <div className="flex items-center justify-between p-3 bg-slate-700/50 border border-slate-600 rounded-lg">
+                  <div>
+                    <p className="text-white text-sm font-medium">
+                      Sistema de referidos
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {referralSettings.isEnabled
+                        ? "✅ Activado — las nuevas compras generarán recompensas"
+                        : "⛔ Desactivado — las nuevas compras no generarán recompensas"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={referralSettings.isEnabled}
+                    onCheckedChange={(checked) =>
+                      setReferralSettings((prev) => ({
+                        ...prev,
+                        isEnabled: checked,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Porcentaje de recompensa */}
+              <div className="space-y-2">
+                <Label className="text-slate-300 text-sm font-medium">
+                  Porcentaje de recompensa (%)
+                </Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={referralSettings.rewardPercent}
+                  onChange={(e) =>
+                    setReferralSettings((prev) => ({
+                      ...prev,
+                      rewardPercent: parseFloat(e.target.value) || 0,
+                    }))
+                  }
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+                <p className="text-xs text-slate-500">
+                  Vista previa: si tu amigo compra por $10.000, recibes{" "}
+                  <span className="text-emerald-400 font-mono">
+                    {(
+                      10000 *
+                      (referralSettings.rewardPercent / 100)
+                    ).toLocaleString("es-CO")}{" "}
+                    créditos
+                  </span>
+                </p>
+              </div>
+
+              {/* Info disclaimer */}
+              <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-3">
+                <div className="flex items-start gap-2 text-yellow-400 text-xs">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Los cambios solo aplican a NUEVAS compras. Las recompensas
+                    ya acreditadas no se recalculan.
+                  </span>
+                </div>
+              </div>
+
+              {/* Stats discretos (muy pequeños y disimulados) */}
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-700">
+                <div className="text-center p-2 bg-slate-900/40 rounded">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+                    Recompensas
+                  </p>
+                  <p className="text-sm font-bold text-emerald-400">
+                    {referralStats.totalRewarded}
+                  </p>
+                </div>
+                <div className="text-center p-2 bg-slate-900/40 rounded">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+                    Créditos
+                  </p>
+                  <p className="text-sm font-bold text-emerald-400">
+                    {referralStats.totalCreditsEarned.toLocaleString("es-CO")}
+                  </p>
+                </div>
+                <div className="text-center p-2 bg-slate-900/40 rounded">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+                    Pendientes
+                  </p>
+                  <p className="text-sm font-bold text-yellow-400">
+                    {referralStats.pendingCount}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Botones */}
+            <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-slate-700 flex-shrink-0">
+              <Button
+                variant="outline"
+                onClick={() => setShowReferralModal(false)}
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                disabled={loadingReferral}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSaveReferralSettings}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                disabled={loadingReferral}
+              >
+                {loadingReferral ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Gift className="w-4 h-4 mr-2" />
+                    Guardar cambios
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Banner Configuration Modal */}
         <Dialog open={showBannerModal} onOpenChange={setShowBannerModal}>
           <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -9098,9 +9266,26 @@ export default function AdminPage() {
                       text: e.target.value,
                     }))
                   }
-                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 resize-none"
+                  className={`bg-slate-700 text-white placeholder-slate-400 resize-none ${
+                    bannerData.text.length > 190
+                      ? "border-red-500 border-2"
+                      : "border-slate-600"
+                  }`}
                   rows={3}
                 />
+                <div className="flex items-center justify-end">
+                  <span
+                    className={`text-xs font-mono ${
+                      bannerData.text.length > 190
+                        ? "text-red-400"
+                        : bannerData.text.length > 150
+                          ? "text-yellow-400"
+                          : "text-slate-500"
+                    }`}
+                  >
+                    {bannerData.text.length} / 190
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

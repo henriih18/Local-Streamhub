@@ -135,6 +135,8 @@ export default function AccountPage() {
     referrals: any[];
     stats: { total: number; completed: number; creditsEarned: number };
   } | null>(null);
+  const [referralSystemEnabled, setReferralSystemEnabled] = useState(true);
+  const [referralRewardPercent, setReferralRewardPercent] = useState(10);
   const [copiedReferral, setCopiedReferral] = useState(false);
 
   useEffect(() => {
@@ -240,7 +242,6 @@ export default function AccountPage() {
   }, [user, orderFilter]);
 
   // Cargar artículos del carrito
-
   const loadCartItems = async () => {
     try {
       const response = await fetch(`/api/cart`, {
@@ -275,7 +276,7 @@ export default function AccountPage() {
     }
   };
 
-  // === NUEVO: Cargar datos de referidos ===
+  //Cargar datos de referidos
   const fetchReferralData = async () => {
     try {
       const res = await fetch("/api/referrals", { credentials: "include" });
@@ -286,6 +287,8 @@ export default function AccountPage() {
           referrals: data.referrals,
           stats: data.stats,
         });
+        setReferralSystemEnabled(data.systemEnabled !== false);
+        setReferralRewardPercent(data.rewardPercent ?? 10);
       }
     } catch (error) {
       // silencioso
@@ -380,11 +383,6 @@ export default function AccountPage() {
         onLogin={() => {
           router.push("/login");
         }}
-        /* onLogout={() => {
-          setUser(null);
-          localStorage.removeItem("user");
-          router.push("/");
-        }} */
         onLogout={() => {
           fetch("/api/auth/logout", {
             method: "POST",
@@ -442,18 +440,6 @@ export default function AccountPage() {
                           ? "Vendedor"
                           : "Usuario"}
                     </Badge>
-                    {/* Nombre de Usuario 
-                    {user.username && (
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <User className="w-4 h-4 flex-shrink-0" />
-                        <span
-                          className="text-sm truncate"
-                          title={user.username}
-                        >
-                          Usuario: {user.username}
-                        </span>
-                      </div>
-                    )}*/}
                     {/* Email */}
                     <div className="flex items-center gap-2 text-slate-400">
                       <Mail className="w-4 h-4 flex-shrink-0" />
@@ -491,130 +477,166 @@ export default function AccountPage() {
             </CardHeader>
           </Card>
 
-          {/* === NUEVO: Sección "Invita amigos" === */}
+          {/* Sección "Invita amigos" */}
           {referralData && (
-            <Card className="bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border-emerald-600/30 mb-8">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-emerald-400" />
-                  Invita amigos y gana créditos
-                </CardTitle>
-                <p className="text-emerald-200/80 text-sm">
-                  Por cada amigo que haga su primera compra, recibes el 10% en
-                  créditos
-                </p>
-              </CardHeader>
-              <CardContent>
-                {/* Tu código de referido */}
-                <div className="bg-slate-900/50 p-4 rounded-lg mb-4">
-                  <div className="flex flex-col sm:flex-row gap-4 items-center">
-                    <div className="flex-1 text-center">
-                      <p className="text-xs text-slate-400 mb-1">Tu código</p>
-                      <p className="text-2xl font-bold text-emerald-400 tracking-wider break-all">
-                        {referralData.referralCode || "Cargando..."}
+            <div className="relative mb-8">
+              {/* Cartel superpuesto (overlay) - solo cuando está desactivado */}
+              {!referralSystemEnabled && (
+                <div className="absolute top-0 left-0 right-0 z-20 bg-red-900/95 backdrop-blur-sm border border-red-500/60 rounded-t-xl p-3 flex items-center gap-3 shadow-lg shadow-red-900/50">
+                  <AlertCircle className="w-5 h-5 text-red-300 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-red-100 font-semibold text-sm">
+                      Sistema de referidos desactivado temporalmente
+                    </p>
+                    <p className="text-red-200/80 text-xs mt-0.5">
+                      Tu código sigue siendo válido, pero las nuevas compras de
+                      tus amigos no generarán recompensas hasta que se reactive
+                      el sistema.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <Card
+                className={`bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border-emerald-600/30 transition-all ${
+                  !referralSystemEnabled ? "opacity-50 grayscale pt-16" : ""
+                }`}
+              >
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Gift className="h-5 w-5 text-emerald-400" />
+                    Invita amigos y gana créditos
+                  </CardTitle>
+                  <p className="text-emerald-200/80 text-sm">
+                    Por cada amigo que haga su primera compra, recibes el{" "}
+                    {referralRewardPercent}% en créditos
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {/* Tu código de referido */}
+                  <div className="bg-slate-900/50 p-4 rounded-lg mb-4">
+                    <div className="flex flex-col sm:flex-row gap-4 items-center">
+                      <div className="flex-1 text-center">
+                        <p className="text-xs text-slate-400 mb-1">Tu código</p>
+                        <p className="text-2xl font-bold text-emerald-400 tracking-wider break-all">
+                          {referralData.referralCode || "Cargando..."}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={copyReferralLink}
+                        disabled={!referralSystemEnabled}
+                        title={
+                          !referralSystemEnabled
+                            ? "El sistema de referidos está desactivado temporalmente"
+                            : undefined
+                        }
+                        className={`${
+                          !referralSystemEnabled
+                            ? "bg-slate-600 text-slate-400 cursor-not-allowed opacity-50"
+                            : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                        }`}
+                      >
+                        {copiedReferral ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            ¡Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copiar enlace
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-slate-700 text-xs text-slate-400">
+                      <p className="mb-1">
+                        📊 Enlace:{" "}
+                        <span className="text-emerald-300">
+                          {typeof window !== "undefined"
+                            ? `${window.location.origin}/register?ref=${referralData.referralCode}`
+                            : ""}
+                        </span>
+                      </p>
+                      <p>
+                        🎁 Recompensa:{" "}
+                        <span className="text-emerald-300 font-semibold">
+                          Recibes {referralRewardPercent}% de la primera compra
+                          de tu amigo en créditos
+                        </span>
+                      </p>
+                      <p className="mt-1 text-slate-500">
+                        Tu amigo paga el precio normal, tú recibes la recompensa
                       </p>
                     </div>
-                    <Button
-                      onClick={copyReferralLink}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                    >
-                      {copiedReferral ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          ¡Copiado!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copiar enlace
-                        </>
-                      )}
-                    </Button>
                   </div>
-
-                  <div className="mt-3 pt-3 border-t border-slate-700 text-xs text-slate-400">
-                    <p className="mb-1">
-                      📊 Enlace:{" "}
-                      <span className="text-emerald-300">
-                        {typeof window !== "undefined"
-                          ? `${window.location.origin}/register?ref=${referralData.referralCode}`
-                          : ""}
-                      </span>
-                    </p>
-                    <p>
-                      🎁 Recompensa:{" "}
-                      <span className="text-emerald-300 font-semibold">
-                        Recibes 10% de la primera compra de tu amigo en créditos
-                      </span>
-                    </p>
-                    <p className="mt-1 text-slate-500">
-                      Tu amigo paga el precio normal, tú recibes la recompensa
-                    </p>
-                  </div>
-                </div>
-                {/* Stats de referidos */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-slate-900/50 p-3 rounded-lg text-center">
-                    <Users className="h-5 w-5 mx-auto text-blue-400 mb-1" />
-                    <p className="text-xl font-bold text-white">
-                      {referralData.stats.total}
-                    </p>
-                    <p className="text-xs text-slate-400">Invitados</p>
-                  </div>
-                  <div className="bg-slate-900/50 p-3 rounded-lg text-center">
-                    <CheckCircle className="h-5 w-5 mx-auto text-emerald-400 mb-1" />
-                    <p className="text-xl font-bold text-white">
-                      {referralData.stats.completed}
-                    </p>
-                    <p className="text-xs text-slate-400">Compraron</p>
-                  </div>
-                  <div className="bg-slate-900/50 p-3 rounded-lg text-center">
-                    <Gift className="h-5 w-5 mx-auto text-amber-400 mb-1" />
-                    <p className="text-xl font-bold text-emerald-400">
-                      $
-                      {referralData.stats.creditsEarned.toLocaleString("es-CO")}
-                    </p>
-                    <p className="text-xs text-slate-400">Ganado</p>
-                  </div>
-                </div>
-               {/* Lista de referidos (expandible)
-                {referralData.referrals.length > 0 &&
-                  {
-                     <details className="mt-4">
-                    <summary className="cursor-pointer text-sm text-emerald-300 hover:text-emerald-200">
-                      Ver mis referidos ({referralData.referrals.length})
-                    </summary>
-                    <div className="mt-3 space-y-2">
-                      {referralData.referrals.map((ref: any) => (
-                        <div
-                          key={ref.id}
-                          className="flex items-center justify-between p-2 bg-slate-900/50 rounded text-sm"
-                        >
-                          <span className="text-slate-300">
-                            {ref.referred.email}
-                          </span>
-                          <span
-                            className={`px-2 py-1 rounded text-xs ${
-                              ref.status === "REWARDED"
-                                ? "bg-emerald-500/20 text-emerald-300"
-                                : ref.status === "EXPIRED"
-                                  ? "bg-red-500/20 text-red-300"
-                                  : "bg-slate-500/20 text-slate-400"
-                            }`}
-                          >
-                            {ref.status === "REWARDED"
-                              ? `+${ref.creditsEarned} créditos`
-                              : ref.status === "EXPIRED"
-                                ? "Expirado"
-                                : "Pendiente"}
-                          </span>
-                        </div>
-                      ))}
+                  {/* Stats de referidos */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-slate-900/50 p-3 rounded-lg text-center">
+                      <Users className="h-5 w-5 mx-auto text-blue-400 mb-1" />
+                      <p className="text-xl font-bold text-white">
+                        {referralData.stats.total}
+                      </p>
+                      <p className="text-xs text-slate-400">Invitados</p>
                     </div>
-                  </details> 
-                  }}*/}
-              </CardContent>
-            </Card>
+                    <div className="bg-slate-900/50 p-3 rounded-lg text-center">
+                      <CheckCircle className="h-5 w-5 mx-auto text-emerald-400 mb-1" />
+                      <p className="text-xl font-bold text-white">
+                        {referralData.stats.completed}
+                      </p>
+                      <p className="text-xs text-slate-400">Compraron</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-3 rounded-lg text-center">
+                      <Gift className="h-5 w-5 mx-auto text-amber-400 mb-1" />
+                      <p className="text-xl font-bold text-emerald-400">
+                        ${" "}
+                        {referralData.stats.creditsEarned.toLocaleString(
+                          "es-CO",
+                        )}
+                      </p>
+                      <p className="text-xs text-slate-400">Ganado</p>
+                    </div>
+                  </div>
+                  {/* Lista de referidos (expandible)
+                  {referralData.referrals.length > 0 &&
+                    {
+                       <details className="mt-4">
+                      <summary className="cursor-pointer text-sm text-emerald-300 hover:text-emerald-200">
+                        Ver mis referidos ({referralData.referrals.length})
+                      </summary>
+                      <div className="mt-3 space-y-2">
+                        {referralData.referrals.map((ref: any) => (
+                          <div
+                            key={ref.id}
+                            className="flex items-center justify-between p-2 bg-slate-900/50 rounded text-sm"
+                          >
+                            <span className="text-slate-300">
+                              {ref.referred.email}
+                            </span>
+                            <span
+                              className={`px-2 py-1 rounded text-xs ${
+                                ref.status === "REWARDED"
+                                  ? "bg-emerald-500/20 text-emerald-300"
+                                  : ref.status === "EXPIRED"
+                                    ? "bg-red-500/20 text-red-300"
+                                    : "bg-slate-500/20 text-slate-400"
+                              }`}
+                            >
+                              {ref.status === "REWARDED"
+                                ? `+${ref.creditsEarned} créditos`
+                                : ref.status === "EXPIRED"
+                                  ? "Expirado"
+                                  : "Pendiente"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </details> 
+                    }}*/}
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {/* Stats Grid */}
@@ -730,9 +752,6 @@ export default function AccountPage() {
                             </Badge>
                           </div>
                         </div>
-                        {/* <p className="text-emerald-400 font-medium mb-2">
-                          {contact.number}
-                        </p> */}
                         {contact.description && (
                           <p className="text-slate-400 text-sm mb-3">
                             {contact.description}
@@ -901,11 +920,6 @@ export default function AccountPage() {
                                   </Badge>
                                 )}
 
-                                {/* {order.status === "COMPLETED" && (
-                                  <Badge className="bg-green-600 text-white">
-                                    Activo
-                                  </Badge>
-                                )} */}
                                 {order.status === "COMPLETED" &&
                                   isOrderActive(order) && (
                                     <Badge className="bg-green-600 text-white">
@@ -941,14 +955,6 @@ export default function AccountPage() {
                                       order.createdAt,
                                     ).toLocaleDateString("es-CO")}
                                   </div>
-                                  {/* {order.status === "COMPLETED" && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-slate-400 hover:text-white hover:bg-slate-600"
-                                      onClick={() =>
-                                        toggleOrderExpansion(order.id)
-                                      } */}
                                   {isOrderActive(order) && (
                                     <Button
                                       variant="ghost"

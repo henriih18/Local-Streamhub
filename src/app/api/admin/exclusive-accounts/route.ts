@@ -168,8 +168,6 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       screens,
       saleType,
       deliveryMethod,
-      //maxProfiles,
-      //pricePerProfile,
       isPublic,
       allowedUsers,
       maxSlots,
@@ -180,7 +178,6 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     const sanitizedDescription = sanitizeInput(description);
     const sanitizedDuration = sanitizeInput(duration);
     const sanitizedQuality = quality ? sanitizeInput(quality) : "HD";
-    //const sanitizedQuality = sanitizeInput(quality) || "HD";
 
     // Crear cuenta exclusiva (NO cuenta de streaming)
     const exclusiveAccount = await db.exclusiveAccount.create({
@@ -194,8 +191,6 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
         screens: screens ? String(screens) : null,
         saleType: saleType || "FULL",
         deliveryMethod: deliveryMethod || "AUTOMATIC",
-        //maxProfiles,
-        //pricePerProfile,
         maxSlots: maxSlots || allowedUsers?.length || 1,
         expiresAt: expiresAt ? new Date(expiresAt + "T23:59:59.999Z") : null,
         allowedUsers:

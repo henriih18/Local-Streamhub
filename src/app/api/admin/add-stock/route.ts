@@ -77,7 +77,6 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     }
 
     const results: (AccountStock | AccountProfile)[] = [];
-    //const actualSaleType = saleType || streamingAccount.saleType;
     const actualSaleType = streamingAccount.saleType;
 
     if (actualSaleType === "FULL" && (!accounts || !accounts.trim())) {
@@ -99,7 +98,6 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       );
     }
 
-    // Añadir cuentas completas al stock
     // Añadir cuentas completas al stock
     if (actualSaleType === "FULL" && accounts && accounts.trim()) {
       const accountLines = accounts.trim().split("\n");

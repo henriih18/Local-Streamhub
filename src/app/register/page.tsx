@@ -61,11 +61,6 @@ export default function RegisterPage() {
   const [telegramError, setTelegramError] = useState("");
   const telegramPollRef = useRef<NodeJS.Timeout | null>(null);
   const [referralCode, setReferralCode] = useState("");
-  /* const [referralStatus, setReferralStatus] = useState<{
-    checked: boolean;
-    valid: boolean;
-    referrerUsername?: string;
-  }>({ checked: false, valid: false }); */
   const [referralStatus, setReferralStatus] = useState<{
     checked: boolean;
     valid: boolean;
@@ -73,12 +68,12 @@ export default function RegisterPage() {
   }>({ checked: false, valid: false });
   const [showReferralInput, setShowReferralInput] = useState(false);
   const [cameFromReferralLink, setCameFromReferralLink] = useState(false);
-
+  const [referralSystemEnabled, setReferralSystemEnabled] = useState(true);
+  const [referralRewardPercent, setReferralRewardPercent] = useState(10);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     phone: "",
-    //username: "",
     password: "",
     confirmPassword: "",
   });
@@ -134,7 +129,24 @@ export default function RegisterPage() {
     };
   }, []);
 
-  // === NUEVO: Detectar código de referido en la URL ===
+  // Cargar estado público del sistema de referidos (no requiere auth)
+  useEffect(() => {
+    const fetchReferralStatus = async () => {
+      try {
+        const res = await fetch("/api/referral-status");
+        if (res.ok) {
+          const data = await res.json();
+          setReferralSystemEnabled(data.isEnabled !== false);
+          setReferralRewardPercent(data.rewardPercent ?? 10);
+        }
+      } catch {
+        // Si falla, asumir activado (default seguro)
+      }
+    };
+    fetchReferralStatus();
+  }, []);
+
+  //Detectar código de referido en la URL
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -155,7 +167,7 @@ export default function RegisterPage() {
     }
   }, []);
 
-  // === NUEVO: Función para validar código de referido ===
+  // Función para validar código de referido
   const checkReferralCode = async (code: string) => {
     if (!code || code.length < 3) {
       setReferralStatus({ checked: false, valid: false });
@@ -169,7 +181,6 @@ export default function RegisterPage() {
       setReferralStatus({
         checked: true,
         valid: data.valid,
-        //referrerUsername: data.referrerUsername,
         referrerName: data.referrerName,
       });
     } catch {
@@ -177,7 +188,7 @@ export default function RegisterPage() {
     }
   };
 
-  // ── Telegram Verification Function ──
+  // Telegram Verification Function
   const startTelegramVerification = async () => {
     if (!formData.phone.trim()) {
       setErrors((prev) => ({ ...prev, phone: "Ingresa tu teléfono primero" }));
@@ -262,12 +273,6 @@ export default function RegisterPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    /* if (!formData.fullName.trim()) {
-      newErrors.fullName = "El nombre completo es requerido";
-    } else if (formData.fullName.length < 3) {
-      newErrors.fullName = "El nombre debe tener al menos 3 caracteres";
-    } */
-
     if (!formData.fullName.trim()) {
       newErrors.fullName = "El nombre completo es requerido";
     } else if (formData.fullName.length < 3) {
@@ -292,16 +297,6 @@ export default function RegisterPage() {
     } else if (!phoneRegex.test(formData.phone)) {
       newErrors.phone = "El teléfono no es válido";
     }
-
-    
-    /* const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    if (!formData.username.trim()) {
-      newErrors.username = "El nombre de usuario es requerido";
-    } else if (!usernameRegex.test(formData.username)) {
-      newErrors.username =
-        "Solo letras, números y guiones bajos (3-20 caracteres)";
-    } */
-
 
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida";
@@ -343,7 +338,6 @@ export default function RegisterPage() {
           fullName: formData.fullName,
           email: formData.email,
           phone: formData.phone,
-          //username: formData.username,
           password: formData.password,
           telegramTempToken: telegramToken,
           country: "CO",
@@ -427,16 +421,6 @@ export default function RegisterPage() {
           email: { available: false, message: "", checking: false },
         }));
       }
-    } else if (field === "username") {
-      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-      if (usernameRegex.test(value)) {
-        checkAvailability("username", value);
-      } else {
-        setAvailability((prev) => ({
-          ...prev,
-          username: { available: false, message: "", checking: false },
-        }));
-      }
     }
   };
 
@@ -456,29 +440,6 @@ export default function RegisterPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Nombre Completo 
-              <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-slate-300">
-                  Nombre Completo *
-                </Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="Juan Pérez"
-                  value={formData.fullName}
-                  onChange={(e) =>
-                    handleInputChange("fullName", e.target.value)
-                  }
-                  className={`bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 ${
-                    errors.fullName ? "border-red-400" : ""
-                  }`}
-                  disabled={isLoading}
-                />
-                {errors.fullName && (
-                  <p className="text-red-400 text-sm">{errors.fullName}</p>
-                )}
-              </div>*/}
-
               {/* Nombre Completo */}
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-slate-300">
@@ -536,64 +497,6 @@ export default function RegisterPage() {
                   </p>
                 )}
               </div>
-
-              {/* Nombre de Usuario 
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-slate-300">
-                  Nombre de Usuario *
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="username"
-                    type="text"
-                    placeholder="juanperez"
-                    value={formData.username}
-                    onChange={(e) =>
-                      handleInputChange("username", e.target.value)
-                    }
-                    onBlur={() => handleBlur("username")}
-                    className={`bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 pr-10 ${
-                      errors.username ? "border-red-400" : ""
-                    } ${
-                      availability.username?.available === true
-                        ? "border-green-400"
-                        : ""
-                    } ${
-                      availability.username?.available === false
-                        ? "border-red-400"
-                        : ""
-                    }`}
-                    disabled={isLoading}
-                  />
-                  {availability.username?.checking && (
-                    <div className="absolute right-0 top-0 h-full px-3 flex items-center">
-                      <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
-                    </div>
-                  )}
-                  {availability.username?.available === true &&
-                    !availability.username?.checking && (
-                      <div className="absolute right-0 top-0 h-full px-3 flex items-center">
-                        <Check className="w-4 h-4 text-green-400" />
-                      </div>
-                    )}
-                  {availability.username?.available === false &&
-                    !availability.username?.checking && (
-                      <div className="absolute right-0 top-0 h-full px-3 flex items-center">
-                        <X className="w-4 h-4 text-red-400" />
-                      </div>
-                    )}
-                </div>
-                {errors.username && (
-                  <p className="text-red-400 text-sm">{errors.username}</p>
-                )}
-                {availability.username?.message && !errors.username && (
-                  <p
-                    className={`text-sm ${availability.username.available ? "text-green-400" : "text-red-400"}`}
-                  >
-                    {availability.username.message}
-                  </p>
-                )}
-              </div>*/}
 
               {/* Email */}
               <div className="space-y-2">
@@ -897,20 +800,33 @@ export default function RegisterPage() {
 
               {/* === NUEVO: Banner de referido (si vino con link) === */}
               {cameFromReferralLink && referralStatus.valid && (
-                <div className="mb-4 bg-emerald-500/20 border border-emerald-500/50 rounded-lg p-3 flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                  <div className="text-sm">
-                    <p className="text-emerald-300 font-semibold">
-                      ¡Fuiste invitado por @{referralStatus.referrerName}!
-                    </p>
-                    {/* <p className="text-emerald-200/80 text-xs">
-                      Estás ayudando a tu amigo a ganar créditos
-                    </p> */}
+                <div className="mb-4 space-y-2">
+                  <div className="bg-emerald-500/20 border border-emerald-500/50 rounded-lg p-3 flex items-center gap-2">
+                    <Gift className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="text-emerald-300 font-semibold">
+                        ¡Fuiste invitado por @{referralStatus.referrerName}!
+                      </p>
+                    </div>
                   </div>
+                  {!referralSystemEnabled && (
+                    <div className="bg-red-500/15 border border-red-500/40 rounded-lg p-3 flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs">
+                        <p className="text-red-300 font-semibold">
+                          El sistema de referidos está desactivado
+                        </p>
+                        <p className="text-red-200/80 mt-0.5">
+                          Puedes registrarte igual con el código, pero tu amigo
+                          no recibirá la recompensa.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* === NUEVO: Campo opcional de código de referido === */}
+              {/* Campo opcional de código de referido */}
               <div className="mt-4 pt-4 border-t border-slate-700">
                 {!showReferralInput ? (
                   <button
@@ -950,6 +866,17 @@ export default function RegisterPage() {
                           ) : (
                             <X className="h-4 w-4 text-red-400" />
                           )}
+                          {referralStatus.checked &&
+                            referralStatus.valid &&
+                            !referralSystemEnabled && (
+                              <div className="flex items-start gap-2 text-xs bg-red-500/10 border border-red-500/30 rounded p-2 mt-1">
+                                <AlertCircle className="h-3 w-3 text-red-400 flex-shrink-0 mt-0.5" />
+                                <span className="text-red-300">
+                                  El código es válido pero el sistema de
+                                  referidos está desactivado.
+                                </span>
+                              </div>
+                            )}
                         </div>
                       )}
                     </div>

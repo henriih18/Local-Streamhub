@@ -7,20 +7,12 @@ export const GET = requireAuth(async (request, user) => {
   try {
     const fullUser = await db.user.findUnique({
       where: { id: user.id },
-      /* select: { referralCode: true, username: true }, */
+
       select: { referralCode: true, fullName: true },
     });
 
-    // === Si por algún motivo no tiene código, generar uno al vuelo ===
+    // Si por algún motivo no tiene código, generar uno al vuelo
     if (!fullUser?.referralCode) {
-      /* const cleanUsername = (fullUser?.username || "USER")
-        .replace(/[^a-zA-Z0-9]/g, "")
-        .toUpperCase()
-        .slice(0, 4);
-      // 6 caracteres aleatorios hex
-      const random = crypto.randomBytes(3).toString("hex").toUpperCase();
-      const newCode = `${cleanUsername}${random}`; */
-
       const cleanName = (fullUser?.fullName || "USER")
         .replace(/[^a-zA-Z0-9]/g, "")
         .toUpperCase()
@@ -47,31 +39,41 @@ export const GET = requireAuth(async (request, user) => {
         data: { referralCode: finalCode },
       });
 
+      // Consultar estado del sistema para incluirlo en la respuesta
+      const settings = await db.referralSetting.findFirst();
+
       return NextResponse.json({
         success: true,
         referralCode: finalCode,
+        systemEnabled: settings?.isEnabled ?? true,
+        rewardPercent: settings?.rewardPercent ?? 10,
         referrals: [],
         stats: { total: 0, completed: 0, creditsEarned: 0 },
       });
     }
 
-    // === Obtener referidos y estadísticas ===
-    const [totalCount, completedCount, creditsSum] = await Promise.all([
-      db.referral.count({
-        where: { referrerId: user.id },
-      }),
-      db.referral.count({
-        where: { referrerId: user.id, status: "REWARDED" },
-      }),
-      db.referral.aggregate({
-        where: { referrerId: user.id, status: "REWARDED" },
-        _sum: { creditsEarned: true },
-      }),
-    ]);
+    // Obtener referidos, estadísticas y estado del sistema
+    const [totalCount, completedCount, creditsSum, systemSettings] =
+      await Promise.all([
+        db.referral.count({
+          where: { referrerId: user.id },
+        }),
+        db.referral.count({
+          where: { referrerId: user.id, status: "REWARDED" },
+        }),
+        db.referral.aggregate({
+          where: { referrerId: user.id, status: "REWARDED" },
+          _sum: { creditsEarned: true },
+        }),
+        db.referralSetting.findFirst(),
+      ]);
 
     return NextResponse.json({
       success: true,
       referralCode: fullUser.referralCode,
+      // Estado del sistema de referidos (para atenuar la UI si está desactivado)
+      systemEnabled: systemSettings?.isEnabled ?? true,
+      rewardPercent: systemSettings?.rewardPercent ?? 10,
       // NO devolvemos referrals[], solo stats
       stats: {
         total: totalCount,

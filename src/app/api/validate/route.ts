@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
-    // === Rate limit para evitar brute force de códigos ===
+    // Rate limit para evitar brute force de códigos
     const identifier = getClientIP(request);
     const limitCheck = await rateLimit({
       identifier: `referral-validate:${identifier}`,
@@ -32,16 +32,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ valid: false });
     }
 
-    /* // Buscar el referidor (solo devuelve username, no datos sensibles)
-    const referrer = await db.user.findUnique({
-      where: { referralCode: code },
-      select: {
-        username: true,
-        id: true,
-        isActive: true,
-        isBlocked: true,
-      },
-    }); */
 
     // Buscar el referidor (solo devuelve fullName, no datos sensibles)
     const referrer = await db.user.findUnique({
@@ -57,10 +47,6 @@ export async function GET(request: NextRequest) {
     // Solo validar si el referidor está activo y no bloqueado
     const isValid = !!referrer && referrer.isActive && !referrer.isBlocked;
 
-    /* return NextResponse.json({
-      valid: isValid,
-      referrerUsername: isValid ? referrer?.username : null,
-    }); */
 
     return NextResponse.json({
       valid: isValid,

@@ -75,7 +75,7 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
     if (!user) return { user: null, error: "Usuario no existe" };
     if (!user.isActive) return { user: null, error: "Cuenta inactiva" };
     //if (user.isBlocked) return { user: null, error: "Cuenta bloqueada" };
-        if (user.isBlocked) {
+    if (user.isBlocked) {
       // Auto-desbloquear si el bloqueo temporal ya expiró
       if (user.blockExpiresAt && new Date() > user.blockExpiresAt) {
         await db.user
@@ -98,7 +98,7 @@ export const auth = async (request: NextRequest): Promise<AuthResult> => {
       }
     }
 
-    // === Chequeo de trial de vendedor ===
+    // Chequeo de trial de vendedor
     if (
       user.role === "VENDEDOR" &&
       user.vendorTrialStartedAt &&
@@ -260,10 +260,7 @@ export function optionalAuth(
   };
 }
 
-// ============================================================
 //  Notificacion cuando vence el periodo de prueba de vendedores
-// ============================================================
-
 async function notifyVendorTrialResult(params: {
   userId: string;
   telegramChatId: string | null;
@@ -273,7 +270,7 @@ async function notifyVendorTrialResult(params: {
 }): Promise<void> {
   const { userId, telegramChatId, totalVentas, trialQuota, aprobo } = params;
 
-  // --- 1. Mensaje in-app (tabla Message) ---
+  // Mensaje in-app (tabla Message)
 
   const title = aprobo
     ? "¡Felicidades! Ahora eres Vendedor permanente"
@@ -312,7 +309,7 @@ async function notifyVendorTrialResult(params: {
     );
   }
 
-  // --- 2. Mensaje por Telegram (si tiene chatId vinculado) ---
+  // Mensaje por Telegram (si tiene chatId vinculado)
   if (!telegramChatId) {
     logger.info(
       {

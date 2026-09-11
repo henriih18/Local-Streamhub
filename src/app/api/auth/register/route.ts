@@ -5,23 +5,12 @@ import { db } from "@/lib/db";
 import {
   sanitizeFullName,
   sanitizePhone,
-  //sanitizeUsername,
 } from "@/lib/sanitize";
 import { rateLimit, getClientIP } from "@/lib/rate-limiter";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
 
 // Función para generar código de referido único
-/* function generateReferralCode(username: string): string {
-  const cleanUsername = username
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .toUpperCase()
-    .slice(0, 4);
-  // 6 caracteres aleatorios hex (anti-fuerza bruta)
-  const random = crypto.randomBytes(3).toString("hex").toUpperCase();
-  return `${cleanUsername}${random}`;
-} */
-
 function generateReferralCode(fullName: string): string {
   const cleanName = fullName
     .replace(/[^a-zA-Z0-9]/g, "")
@@ -50,15 +39,6 @@ const registerSchema = z
       .trim()
       .min(10, "El teléfono debe tener al menos 10 dígitos")
       .max(20, "El teléfono no puede exceder 20 caracteres"),
-    /* username: z
-      .string()
-      .trim()
-      .min(3, "El usuario debe tener al menos 3 caracteres")
-      .max(20, "El usuario no puede exceder 20 caracteres")
-      .regex(
-        /^[a-zA-Z0-9_]+$/,
-        "Solo se permiten letras, números y guiones bajos",
-      ), */
     password: z
       .string()
       .trim()
@@ -132,7 +112,6 @@ export async function POST(request: NextRequest) {
       fullName,
       email,
       phone,
-      //username,
       password,
       telegramTempToken,
       country,
@@ -143,9 +122,8 @@ export async function POST(request: NextRequest) {
 
     const sanitizedFullName = sanitizeFullName(fullName);
     const sanitizedPhone = sanitizePhone(phone);
-    //const sanitizedUsername = sanitizeUsername(username);
 
-    // ── Verificar token de Telegram ──
+    // Verificar token de Telegram
     const linkToken = await db.telegramLinkToken.findUnique({
       where: { tempToken: telegramTempToken },
     });
@@ -208,7 +186,7 @@ export async function POST(request: NextRequest) {
     // Limpiar token usado
     await db.telegramLinkToken.delete({ where: { id: linkToken.id } });
 
-    // ── Verificar unicidad ──
+    // Verificar unicidad
     const existingEmail = await db.user.findUnique({ where: { email } });
     if (existingEmail) {
       return NextResponse.json(
@@ -216,16 +194,6 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       );
     }
-
-    /* const existingUsername = await db.user.findUnique({
-      where: { username: sanitizedUsername },
-    });
-    if (existingUsername) {
-      return NextResponse.json(
-        { error: "Este nombre de usuario ya está en uso", field: "username" },
-        { status: 409 },
-      );
-    } */
 
     const existingFullName = await db.user.findUnique({
       where: { fullName: sanitizedFullName },
@@ -248,7 +216,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Crear usuario ──
+    // Crear usuario
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -263,7 +231,6 @@ export async function POST(request: NextRequest) {
         fullName: sanitizedFullName,
         email: email.toLowerCase(),
         phone: finalPhone,
-        //username: sanitizedUsername,
         password: hashedPassword,
         telegramChatId: verifiedChatId,
         acceptMarketing,
@@ -281,25 +248,11 @@ export async function POST(request: NextRequest) {
         id: true,
         fullName: true,
         email: true,
-        //username: true,
         country: true,
         language: true,
         createdAt: true,
       },
     });
-
-    // Generar código de referido único para el nuevo usuario ===
-    /* let newReferralCode = generateReferralCode(sanitizedUsername);
-    let attempts = 0;
-    while (
-      (await db.user.findUnique({
-        where: { referralCode: newReferralCode },
-      })) &&
-      attempts < 10
-    ) {
-      newReferralCode = generateReferralCode(sanitizedUsername);
-      attempts++;
-    } */
 
     let newReferralCode = generateReferralCode(sanitizedFullName);
     let attempts = 0;

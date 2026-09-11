@@ -180,19 +180,6 @@ export default function Navigation({
                     Stream
                   </span>
 
-                  {/* {user && (
-                    <>
-                      
-                      <span className="hidden md:inline text-lg font-medium text-emerald-400">
-                        | {user.username || user.email}
-                      </span>
-
-                      
-                      <span className="md:hidden text-lg font-medium text-emerald-400">
-                        | {truncateUsername(user.username || user.email)}
-                      </span>
-                    </>
-                  )} */}
                   {user && (
                     <>
                       {/* Pantallas grandes: nombre completo */}

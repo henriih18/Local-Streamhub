@@ -49,7 +49,6 @@ export const PUT = requireAdmin(
         duration: z.string().optional(),
         maxSlots: z.coerce.number().int().min(1).optional(),
         deliveryMethod: z.enum(["AUTOMATIC", "SUPPORT"]).optional(),
-        //credentials: z.string().optional(),
         isPublic: z.boolean().optional(),
         expiresAt: z.union([z.string(), z.date()]).optional().nullable(),
         isActive: z.boolean().optional(),
@@ -85,7 +84,6 @@ export const PUT = requireAdmin(
           ...(data.type && { type: sanitizeInput(data.type) }),
           ...(data.price !== undefined && {
             price: data.price,
-            
           }),
           ...(data.duration !== undefined && {
             duration: data.duration,

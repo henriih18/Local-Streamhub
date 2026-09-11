@@ -154,47 +154,6 @@ export function MonthlyHistoryModal({
     setExpandedYears(newExpanded);
   };
 
-  /* const exportToCSV = () => {
-    if (!historyData) return;
-
-    const csvContent = [
-      [
-        "Año",
-        "Mes",
-        "Ingresos",
-        "Gastos",
-        "Ganancias",
-        "Margen %",
-        "Recargas",
-        "Usuarios Únicos",
-      ],
-      ...historyData.history.map((record) => [
-        record.year,
-        getMonthName(record.month),
-        record.revenue.toString(),
-        record.expenses.toString(),
-        record.profits.toString(),
-        record.profitMargin.toFixed(2),
-        record.totalRecharges.toString(),
-        record.uniqueUsers.toString(),
-      ]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `historial-ganancias-${
-      new Date().toISOString().split("T")[0]
-    }.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    toast.success("Historial exportado exitosamente");
-  }; */
-
   const isCurrentMonth = (year: number, month: number) => {
     const now = new Date();
     return year === now.getFullYear() && month === now.getMonth() + 1;
@@ -252,16 +211,6 @@ export function MonthlyHistoryModal({
                 </SelectContent>
               </Select>
             </div>
-
-            {/* <Button
-              onClick={exportToCSV}
-              variant="outline"
-              size="sm"
-              className="bg-gray-700 border-gray-600"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar CSV
-            </Button> */}
           </div>
 
           {/* Tarjetas de resumen */}

@@ -193,27 +193,6 @@ export function sanitizeTelegramUsername(input: string): string {
 }
 
 /**
- * Sanitiza nombres de usuario
- */
-/* export function sanitizeUsername(input: string): string {
-  if (typeof input !== "string") {
-    return "";
-    
-  }
-
-  const inputTrimmed = input.trim();
-
-  // Solo permitir letras, números, y guiones bajos (como en el registro)
-  const usernamePattern = /^[a-zA-Z0-9_]{3,20}$/;
-
-  if (usernamePattern.test(inputTrimmed)) {
-    return inputTrimmed;
-  }
-
-  return "";
-} */
-
-/**
  * Sanitiza nombres completos
  */
 export function sanitizeFullName(input: string): string {

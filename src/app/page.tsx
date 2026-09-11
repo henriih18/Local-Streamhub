@@ -416,14 +416,6 @@ export default function Home() {
           fetchCartItems(),
           fetchUserCredits(),
         ]);
-
-        /* // Manejar errores individualmente
-        if (cartData.status === "rejected") {
-          console.error("Error fetching cart:", cartData.reason);
-        }
-        if (creditsData.status === "rejected") {
-          console.error("Error fetching credits:", creditsData.reason);
-        } */
       } catch (error) {
         //console.error("Error in combined fetch:", error);
       }

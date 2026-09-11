@@ -154,6 +154,7 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
     );
   }
 });
+
 export const GET = requireAdmin(async (request: NextRequest, user) => {
   try {
     const totalUsers = await db.user.count({

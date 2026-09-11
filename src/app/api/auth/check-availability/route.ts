@@ -4,11 +4,6 @@ import { z } from "zod";
 import { getClientIdentifier, rateLimit } from "@/lib/rate-limiter";
 import { logger } from "@/lib/logger";
 
-/* const checkAvailabilitySchema = z.object({
-  type: z.enum(["email", "username", "phone"]),
-  value: z.string().min(1, "El valor es requerido"),
-}); */
-
 const checkAvailabilitySchema = z.object({
   type: z.enum(["email", "fullName", "phone"]),
   value: z.string().min(1, "El valor es requerido"),
@@ -44,15 +39,6 @@ export async function GET(request: NextRequest) {
 
     const { type: fieldType, value: fieldValue } = validation.data;
 
-    // Verificar disponibilidad según el tipo
-    /* let existingUser: {
-      id: string;
-      email: string;
-      username: string | null;
-      name: string | null;
-    } | null = null;
-    let fieldName = ""; */
-
     let existingUser: {
       id: string;
       email: string;
@@ -66,12 +52,6 @@ export async function GET(request: NextRequest) {
         where: { email: fieldValue.toLowerCase() },
       });
       fieldName = "email";
-      /* } else if (fieldType === "username") {
-      existingUser = await db.user.findUnique({
-        where: { username: fieldValue },
-      });
-      fieldName = "username";
-    } else if (fieldType === "phone") { */
     } else if (fieldType === "fullName") {
       existingUser = await db.user.findUnique({
         where: { fullName: fieldValue },
@@ -102,9 +82,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         available: true,
         message:
-          fieldType === "email"
-            ? "Email disponible"
-            : "Nombre disponible",
+          fieldType === "email" ? "Email disponible" : "Nombre disponible",
         field: fieldName,
       });
     }

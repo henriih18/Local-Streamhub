@@ -182,7 +182,6 @@ export const broadcastOrderUpdate = (io: Server, orderData: any) => {
   io.to("admins").emit("orderUpdated", orderData);
 };
 
-
 // Función para obtener la instancia de IO
 export const getIO = (): Server | null => {
   return (global as any).io || null;
