@@ -521,3 +521,11 @@ model Referral {
 
   @@index([referrerId])
 }
+
+model ReferralSetting {
+  id            String   @id @default(cuid())
+  isEnabled     Boolean  @default(true) // Si el sistema de referidos está activo
+  rewardPercent Float    @default(10) // Porcentaje de recompensa (0-100)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

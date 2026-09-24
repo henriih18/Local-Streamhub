@@ -9,12 +9,10 @@ const TOKEN = process.env.TELEGRAM_RECHARGE_BOT_TOKEN || "";
 const GROUP_ID = process.env.TELEGRAM_RECHARGE_GROUP_ID || "";
 const BOT_TYPE = "recharge";
 // ⚠️ EDITA AQUÍ: pon las llaves REALES donde tus usuarios pueden consignar
-const PAYMENT_KEYS = [
-  "💳: 300 123 4567",
-  "💳: 300 123 4567",
-  //"🏦 Bancolombia (Ahorros): 123-456789-01",
-  //"📱 Daviplata: 300 123 4567",
-];
+const PAYMENT_KEYS = (process.env.PAYMENT_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
 
 function verifySecret(req: NextRequest): boolean {
   const secret = process.env.TELEGRAM_RECHARGE_WEBHOOK_SECRET;
@@ -131,16 +129,21 @@ export async function POST(req: NextRequest) {
       parse_mode: "Markdown",
     });
 
-    await sendToUser(
-      cbChatId,
-      `💰 *Recargas iniciado*\n\n` +
-        `1️⃣ Consigna en una de las siguientes llaves:\n\n` +
-        PAYMENT_KEYS.map((k) => `   ${k}`).join("\n") +
-        `\n\n` +
-        `2️⃣ 📸 Envía aquí la *foto del comprobante* de la transferencia.\n` +
-        `3️⃣ 📧 Escribe el *correo electrónico* de tu cuenta RiyoStream.\n\n` +
-        `✅ Un agente verificará tu pago y te abonará los créditos en breve.`,
-    );
+    // Construir mensaje de llaves (con fallback si no hay llaves configuradas)
+    const keysMessage =
+      PAYMENT_KEYS.length > 0
+        ? `1️⃣ Consigna en una de las siguientes llaves:\n\n` +
+          PAYMENT_KEYS.map((k) => `   ${k}`).join("\n") +
+          `\n\n` +
+          `2️⃣ 📸 Envía aquí la *foto del comprobante* de la transferencia.\n` +
+          `3️⃣ 📧 Escribe el *correo electrónico* de tu cuenta RiyoStream.\n\n` +
+          `✅ Un agente verificará tu pago y te abonará los créditos en breve.`
+        : `1️⃣ Realiza la consignación y envía aquí la *foto del comprobante*.\n` +
+          `2️⃣ 📧 Escribe el *correo electrónico* de tu cuenta RiyoStream.\n\n` +
+          `✅ Un agente verificará tu pago y te abonará los créditos en breve.\n\n` +
+          `⚠️ _Si necesitas información sobre las llaves de pago, contacta a soporte._`;
+
+    await sendToUser(cbChatId, `💰 *Recargas iniciado*\n\n` + keysMessage);
 
     return NextResponse.json({ ok: true });
   }

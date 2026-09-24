@@ -85,7 +85,6 @@ async function processReferralReward(
 
     if (reward <= 0) return;
 
-    if (reward <= 0) return;
 
     // Transacción atómica: actualizar referral + acreditar créditos
     await db.$transaction([

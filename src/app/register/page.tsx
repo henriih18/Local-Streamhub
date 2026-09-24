@@ -219,7 +219,7 @@ export default function RegisterPage() {
       const tempToken = linkData.deepLink.split("start=")[1];
       setTelegramToken(tempToken);
 
-      window.open(linkData.deepLink, "_blank");
+      /* window.open(linkData.deepLink, "_blank");
       setTelegramStatus("waiting");
 
       const pollInterval = setInterval(async () => {
@@ -243,6 +243,56 @@ export default function RegisterPage() {
           }
         } catch {
           // seguir haciendo polling
+        }
+      }, 3000);
+
+      telegramPollRef.current = pollInterval; */
+
+      window.open(linkData.deepLink, "_blank");
+      setTelegramStatus("waiting");
+
+      // Limpiar polling anterior si existe (fix: evitar intervalos huérfanos)
+      if (telegramPollRef.current) {
+        clearInterval(telegramPollRef.current);
+        telegramPollRef.current = null;
+      }
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const checkRes = await fetch("/api/telegram/check-link", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tempToken }),
+          });
+
+          // Si la respuesta no es OK (ej: 429 rate limit), continuar polling
+          if (!checkRes.ok) {
+            return;
+          }
+
+          const checkData = await checkRes.json();
+
+          if (checkData.status === "LINKED") {
+            clearInterval(pollInterval);
+            telegramPollRef.current = null;
+            setTelegramStatus("verified");
+          } else if (checkData.status === "EXPIRED") {
+            clearInterval(pollInterval);
+            telegramPollRef.current = null;
+            setTelegramStatus("error");
+            setTelegramError("El enlace expiró. Intenta de nuevo.");
+          } else if (checkData.status === "NOT_FOUND") {
+            // El token fue eliminado (expiró o ya se usó)
+            clearInterval(pollInterval);
+            telegramPollRef.current = null;
+            setTelegramStatus("error");
+            setTelegramError(
+              "El enlace de verificación ya no es válido. Genera uno nuevo.",
+            );
+          }
+          // Para PENDING y WAITING_PHONE: seguir esperando (no hacer nada)
+        } catch {
+          // Error de red: seguir haciendo polling
         }
       }, 3000);
 
@@ -560,9 +610,9 @@ export default function RegisterPage() {
                   <Label htmlFor="phone" className="text-slate-300">
                     Teléfono *
                   </Label>
-                  <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
-                    Requiere verificación por Telegram / Telegram X
-                  </span>
+                  {/* <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+                    Requiere verificación por Telegram o Telegram X
+                  </span> */}
                 </div>
                 <div className="flex">
                   <span className="flex items-center px-3 bg-slate-600 border border-r-0 border-slate-500 text-slate-300 text-sm rounded-l-md shrink-0">
@@ -591,28 +641,15 @@ export default function RegisterPage() {
                   <p className="text-red-400 text-sm">{errors.phone}</p>
                 )}
                 {telegramStatus !== "verified" && !errors.phone && (
-                  <p className="text-sky-400/80 text-xs">
-                    🔒 Debes verificar tu número por Telegram para completar el
-                    registro
-                  </p>
-                )}
-
-                {/* Botón Verificar Telegram */}
-                {telegramStatus === "idle" && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1 border-sky-500/50 text-sky-400 hover:bg-sky-500/10"
-                      onClick={startTelegramVerification}
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      Verificar por Telegram / Telegram X
-                    </Button>
-                    <div className="relative">
+                  <div className="flex items-start gap-2">
+                    <p className="text-sky-400/80 text-xs flex-1">
+                      🔒 Debes verificar tu número por Telegram para completar
+                      el registro
+                    </p>
+                    <div className="relative flex-shrink-0">
                       <button
                         type="button"
-                        className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-300 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center rounded-full border border-amber-400 text-amber-300 hover:border-amber-400/40 hover:text-amber-200 transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           const tooltip = e.currentTarget.nextElementSibling;
@@ -646,6 +683,33 @@ export default function RegisterPage() {
                         <div className="absolute bottom-full left-4 -mb-px w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-slate-600 sm:top-full sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:mb-0 sm:-mt-px sm:border-b-transparent sm:border-t-slate-600 sm:border-t-[6px]"></div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Botón Verificar Telegram */}
+                {/* {telegramStatus === "idle" && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 border-sky-500/50 text-sky-400 hover:bg-sky-500/10"
+                      onClick={startTelegramVerification}
+                    >
+                      <Send className="w-3 h-3 mr-2" />
+                      Verificar por Telegram o Telegram X
+                    </Button> */}
+                {/* Botón Verificar Telegram */}
+                {telegramStatus === "idle" && (
+                  <div className="flex items-start gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 min-w-0 h-auto py-3 whitespace-normal border-sky-500/50 text-sky-400 hover:bg-sky-500/15 hover:text-white hover:border-sky-400"
+                      onClick={startTelegramVerification}
+                    >
+                      <Send className="w-4 h-4 flex-shrink-0" />
+                      <span>Verificar por Telegram o Telegram X</span>
+                    </Button>
                   </div>
                 )}
 

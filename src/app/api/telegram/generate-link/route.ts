@@ -20,6 +20,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // eliminar tokens expirados antes de crear uno nuevo
+    // Esto mantiene la tabla pequeña y previene el bug de "tokens múltiples
+    // para el mismo chatId" (que causaba que el frontend se quedara cargando)
+    try {
+      const deleted = await db.telegramLinkToken.deleteMany({
+        where: {
+          expiresAt: { lt: new Date() },
+        },
+      });
+      if (deleted.count > 0) {
+        logger.info(
+          {
+            context: "telegram_link_cleanup",
+            deletedCount: deleted.count,
+          },
+          `Limpieza de tokens expirados: ${deleted.count} eliminados`,
+        );
+      }
+    } catch (cleanupError) {
+      // Si falla la limpieza, no bloquear la generación del nuevo token
+      logger.error(
+        { err: cleanupError, context: "telegram_link_cleanup" },
+        "Error en limpieza de tokens expirados (no bloquea)",
+      );
+    }
+
     const tempToken = generateTempToken();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -53,11 +79,4 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-export function GET() {
-  return NextResponse.json(
-    { error: "Método no permitido" },
-    { status: 405, headers: { Allow: "POST" } },
-  );
 }

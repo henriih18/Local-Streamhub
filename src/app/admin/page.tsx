@@ -221,6 +221,7 @@ interface ExclusiveAccount {
   quality?: string;
   screens?: string;
   saleType: string;
+  deliveryMethod?: "AUTOMATIC" | "SUPPORT";
   maxProfiles?: number;
   pricePerProfile?: number;
   isPublic: boolean;
@@ -620,6 +621,9 @@ export default function AdminPage() {
   const [applyToAllUsers, setApplyToAllUsers] = useState(false);
   const [rechargingUserId, setRechargingUserId] = useState<string | null>(null);
   const [isRecharging, setIsRecharging] = useState(false);
+  const [inventoryFilter, setInventoryFilter] = useState<
+    "all" | "active" | "inactive"
+  >("active");
 
   const checkAuth = (): boolean => {
     if (!user?.id) {
@@ -2997,204 +3001,278 @@ export default function AdminPage() {
                     </div>
                   </div>
 
+                  {/* Filtro Activa/Inactiva */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-slate-400 mr-1">
+                      Filtrar:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setInventoryFilter("all")}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                        inventoryFilter === "all"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInventoryFilter("active")}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                        inventoryFilter === "active"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                      }`}
+                    >
+                      Activas
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInventoryFilter("inactive")}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                        inventoryFilter === "inactive"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                      }`}
+                    >
+                      Inactivas
+                    </button>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {/* Cuentas Regulares */}
-                    {accounts.map((account) => {
-                      const totalStock =
-                        (account._count.accountStocks || 0) +
-                        (account._count.profileStocks || 0);
-                      const isInfinite = account.deliveryMethod === "SUPPORT";
+                    {accounts
+                      .filter((account) =>
+                        inventoryFilter === "all"
+                          ? true
+                          : inventoryFilter === "active"
+                            ? account.isActive
+                            : !account.isActive,
+                      )
+                      .map((account) => {
+                        const totalStock =
+                          (account._count.accountStocks || 0) +
+                          (account._count.profileStocks || 0);
+                        const isInfinite = account.deliveryMethod === "SUPPORT";
 
-                      return (
-                        <div
-                          key={account.id}
-                          className="bg-slate-900/50 border border-slate-700 rounded-lg p-2 hover:bg-slate-900/70 transition-colors cursor-pointer"
-                          onClick={() => fetchInventoryStocks(account, false)}
-                        >
-                          {/* Header */}
-                          <div className="flex items-center justify-between mb-1">
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                account.isActive
-                                  ? "bg-emerald-400"
-                                  : "bg-red-400"
-                              }`}
-                            />
-                            {account.saleType === "EXCLUSIVE" && (
-                              <span className="px-1 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[8px]">
-                                E
-                              </span>
-                            )}
-                            {isInfinite && (
-                              <span
-                                className="px-1 py-0.5 bg-cyan-500/20 text-cyan-300 rounded text-[8px]"
-                                title="Entrega por soporte — stock infinito"
-                              >
-                                ∞
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Nombre */}
+                        return (
                           <div
-                            className="text-sm font-medium text-white mb-1 truncate"
-                            title={account.name}
+                            key={account.id}
+                            className="bg-slate-900/50 border border-slate-700 rounded-lg p-2 hover:bg-slate-900/70 transition-colors cursor-pointer"
+                            onClick={() => fetchInventoryStocks(account, false)}
                           >
-                            {account.name}
-                          </div>
-
-                          {/* Tipo */}
-                          <div className="text-xs text-slate-400 mb-1">
-                            {account.type}
-                          </div>
-
-                          {/* Stock */}
-                          {isInfinite ? (
-                            <>
-                              <div className="text-lg font-bold text-center mb-1 text-cyan-400">
-                                ∞
-                              </div>
-                              <div className="text-xs text-cyan-300/70 text-center mb-1">
-                                ilimitado
-                              </div>
-                            </>
-                          ) : (
-                            <>
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-1">
                               <div
-                                className={`text-lg font-bold text-center mb-1 ${
-                                  totalStock === 0
-                                    ? "text-red-400"
-                                    : totalStock <= 2
-                                      ? "text-yellow-400"
-                                      : totalStock <= 5
-                                        ? "text-blue-400"
-                                        : "text-emerald-400"
+                                className={`w-2 h-2 rounded-full ${
+                                  account.isActive
+                                    ? "bg-emerald-400"
+                                    : "bg-red-400"
                                 }`}
-                              >
-                                {totalStock}
-                              </div>
-                              <div className="text-xs text-slate-500 text-center mb-1">
-                                unidades
-                              </div>
-                            </>
-                          )}
+                              />
+                              {account.saleType === "EXCLUSIVE" && (
+                                <span className="px-1 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[8px]">
+                                  E
+                                </span>
+                              )}
+                              {isInfinite && (
+                                <span
+                                  className="px-1 py-0.5 bg-cyan-500/20 text-cyan-300 rounded text-[8px]"
+                                  title="Entrega por soporte — stock infinito"
+                                >
+                                  ∞
+                                </span>
+                              )}
+                            </div>
 
-                          {/* Precio */}
-                          <div className="text-sm text-emerald-400 text-center mb-1">
-                            {formatCurrency(account.price)}
-                          </div>
+                            {/* Nombre */}
+                            <div
+                              className="text-sm font-medium text-white mb-1 truncate"
+                              title={account.name}
+                            >
+                              {account.name}
+                            </div>
 
-                          {/* Cuentas/Perfiles */}
-                          <div className="text-xs text-slate-400 text-center mb-1">
-                            {account._count.accountStocks || 0}/
-                            {account._count.profileStocks || 0}
-                          </div>
+                            {/* Tipo */}
+                            <div className="text-xs text-slate-400 mb-1">
+                              {account.type}
+                            </div>
 
-                          {/* Estado */}
-                          <div
-                            className={`px-2 py-1 rounded text-xs text-center w-full ${
-                              account.isActive
-                                ? "bg-emerald-500/20 text-emerald-300"
-                                : "bg-red-500/20 text-red-300"
-                            }`}
-                          >
-                            {account.isActive ? "Activa" : "Inactiva"}
+                            {/* Stock */}
+                            {isInfinite ? (
+                              <>
+                                <div className="text-lg font-bold text-center mb-1 text-cyan-400">
+                                  ∞
+                                </div>
+                                <div className="text-xs text-cyan-300/70 text-center mb-1">
+                                  ilimitado
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div
+                                  className={`text-lg font-bold text-center mb-1 ${
+                                    totalStock === 0
+                                      ? "text-red-400"
+                                      : totalStock <= 2
+                                        ? "text-yellow-400"
+                                        : totalStock <= 5
+                                          ? "text-blue-400"
+                                          : "text-emerald-400"
+                                  }`}
+                                >
+                                  {totalStock}
+                                </div>
+                                <div className="text-xs text-slate-500 text-center mb-1">
+                                  unidades
+                                </div>
+                              </>
+                            )}
+
+                            {/* Precio */}
+                            <div className="text-sm text-emerald-400 text-center mb-1">
+                              {formatCurrency(account.price)}
+                            </div>
+
+                            {/* Cuentas/Perfiles */}
+                            <div className="text-xs text-slate-400 text-center mb-1">
+                              {account._count.accountStocks || 0}/
+                              {account._count.profileStocks || 0}
+                            </div>
+
+                            {/* Estado */}
+                            <div
+                              className={`px-2 py-1 rounded text-xs text-center w-full ${
+                                account.isActive
+                                  ? "bg-emerald-500/20 text-emerald-300"
+                                  : "bg-red-500/20 text-red-300"
+                              }`}
+                            >
+                              {account.isActive ? "Activa" : "Inactiva"}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
 
                     {/* Cuentas Exclusivas */}
-                    {exclusiveAccounts.map((account) => {
-                      // Calcular stock disponible: stocks totales - stocks vendidos
-                      const totalStock = account.exclusiveStocks?.length || 0;
-                      const soldStock =
-                        account.exclusiveStocks?.filter(
-                          (stock) => !stock.isAvailable,
-                        ).length || 0;
-                      const availableStock = totalStock - soldStock;
+                    {exclusiveAccounts
+                      .filter((account) =>
+                        inventoryFilter === "all"
+                          ? true
+                          : inventoryFilter === "active"
+                            ? account.isActive
+                            : !account.isActive,
+                      )
+                      .map((account) => {
+                        // Calcular stock disponible: stocks totales - stocks vendidos
+                        const totalStock = account.exclusiveStocks?.length || 0;
+                        const soldStock =
+                          account.exclusiveStocks?.filter(
+                            (stock) => !stock.isAvailable,
+                          ).length || 0;
+                        const availableStock = totalStock - soldStock;
 
-                      return (
-                        <div
-                          key={account.id}
-                          className="bg-gradient-to-br from-amber-900/20 to-yellow-900/20 border border-amber-500/30 rounded-lg p-2 hover:from-amber-900/30 hover:to-yellow-900/30 transition-all relative cursor-pointer"
-                          onClick={() => fetchInventoryStocks(account, true)}
-                        >
-                          {/* Efecto de brillo dorado */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 via-yellow-600/10 to-orange-600/10 rounded-lg"></div>
+                        return (
+                          <div
+                            key={account.id}
+                            className="bg-gradient-to-br from-amber-900/20 to-yellow-900/20 border border-amber-500/30 rounded-lg p-2 hover:from-amber-900/30 hover:to-yellow-900/30 transition-all relative cursor-pointer"
+                            onClick={() => fetchInventoryStocks(account, true)}
+                          >
+                            {/* Efecto de brillo dorado */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 via-yellow-600/10 to-orange-600/10 rounded-lg"></div>
 
-                          {/* Header */}
-                          <div className="flex items-center justify-between mb-1 relative">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-1 relative">
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  account.isActive
+                                    ? "bg-amber-400"
+                                    : "bg-red-400"
+                                }`}
+                              />
+                              <span className="px-1 py-0.5 bg-amber-500/30 text-yellow-300 rounded text-[8px] border border-amber-400/50">
+                                EXCL
+                              </span>
+                            </div>
+
+                            {/* Nombre */}
                             <div
-                              className={`w-2 h-2 rounded-full ${
-                                account.isActive ? "bg-amber-400" : "bg-red-400"
+                              className="text-sm font-medium text-white mb-1 truncate relative"
+                              title={account.name}
+                            >
+                              {account.name}
+                            </div>
+
+                            {/* Tipo */}
+                            <div className="text-xs text-amber-200 mb-1 relative">
+                              {account.type}
+                            </div>
+
+                            {/* Stock */}
+                            <div
+                              className={`text-lg font-bold text-center mb-1 relative ${
+                                availableStock === 0
+                                  ? "text-red-400"
+                                  : availableStock <= 2
+                                    ? "text-yellow-300"
+                                    : availableStock <= 5
+                                      ? "text-amber-300"
+                                      : "text-yellow-200"
                               }`}
-                            />
-                            <span className="px-1 py-0.5 bg-amber-500/30 text-yellow-300 rounded text-[8px] border border-amber-400/50">
-                              EXCL
-                            </span>
-                          </div>
+                            >
+                              {availableStock}
+                            </div>
 
-                          {/* Nombre */}
-                          <div
-                            className="text-sm font-medium text-white mb-1 truncate relative"
-                            title={account.name}
-                          >
-                            {account.name}
-                          </div>
+                            <div className="text-xs text-amber-300/70 text-center mb-1 relative">
+                              unidades
+                            </div>
 
-                          {/* Tipo */}
-                          <div className="text-xs text-amber-200 mb-1 relative">
-                            {account.type}
-                          </div>
+                            {/* Precio */}
+                            <div className="text-sm text-yellow-300 text-center mb-1 relative">
+                              {formatCurrency(account.price)}
+                            </div>
 
-                          {/* Stock */}
-                          <div
-                            className={`text-lg font-bold text-center mb-1 relative ${
-                              availableStock === 0
-                                ? "text-red-400"
-                                : availableStock <= 2
-                                  ? "text-yellow-300"
-                                  : availableStock <= 5
-                                    ? "text-amber-300"
-                                    : "text-yellow-200"
-                            }`}
-                          >
-                            {availableStock}
-                          </div>
+                            {/* Cuentas/Perfiles */}
+                            <div className="text-xs text-amber-200/70 text-center mb-1 relative">
+                              {soldStock} vendidas
+                            </div>
 
-                          <div className="text-xs text-amber-300/70 text-center mb-1 relative">
-                            unidades
+                            {/* Estado */}
+                            <div
+                              className={`px-2 py-1 rounded text-xs text-center w-full relative ${
+                                account.isActive
+                                  ? "bg-amber-500/30 text-yellow-300 border border-amber-400/50"
+                                  : "bg-red-500/20 text-red-300"
+                              }`}
+                            >
+                              {account.isActive ? "Activa" : "Inactiva"}
+                            </div>
                           </div>
+                        );
+                      })}
 
-                          {/* Precio */}
-                          <div className="text-sm text-yellow-300 text-center mb-1 relative">
-                            {formatCurrency(account.price)}
-                          </div>
-
-                          {/* Cuentas/Perfiles */}
-                          <div className="text-xs text-amber-200/70 text-center mb-1 relative">
-                            {soldStock} vendidas
-                          </div>
-
-                          {/* Estado */}
-                          <div
-                            className={`px-2 py-1 rounded text-xs text-center w-full relative ${
-                              account.isActive
-                                ? "bg-amber-500/30 text-yellow-300 border border-amber-400/50"
-                                : "bg-red-500/20 text-red-300"
-                            }`}
-                          >
-                            {account.isActive ? "Activa" : "Inactiva"}
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {accounts.length === 0 &&
-                      exclusiveAccounts.length === 0 && (
+                    {accounts.filter((a) =>
+                      inventoryFilter === "all"
+                        ? true
+                        : inventoryFilter === "active"
+                          ? a.isActive
+                          : !a.isActive,
+                    ).length === 0 &&
+                      exclusiveAccounts.filter((a) =>
+                        inventoryFilter === "all"
+                          ? true
+                          : inventoryFilter === "active"
+                            ? a.isActive
+                            : !a.isActive,
+                      ).length === 0 && (
                         <div className="col-span-full text-center py-8 text-slate-400 text-sm">
-                          No hay cuentas registradas
+                          {inventoryFilter === "active"
+                            ? "No hay cuentas activas"
+                            : inventoryFilter === "inactive"
+                              ? "No hay cuentas inactivas"
+                              : "No hay cuentas registradas"}
                         </div>
                       )}
                   </div>
@@ -4268,24 +4346,36 @@ export default function AdminPage() {
                       </SelectTrigger>
                       <SelectContent className="bg-slate-800 border-slate-700">
                         {stockData.accountType === "exclusive"
-                          ? exclusiveAccounts.map((account) => (
-                              <SelectItem
-                                key={account.id}
-                                value={account.id}
-                                className="text-white"
-                              >
-                                👑 {account.name} - {account.type}
-                              </SelectItem>
-                            ))
-                          : accounts.map((account) => (
-                              <SelectItem
-                                key={account.id}
-                                value={account.id}
-                                className="text-white"
-                              >
-                                {account.name} - {account.type}
-                              </SelectItem>
-                            ))}
+                          ? exclusiveAccounts
+                              .filter(
+                                (account) =>
+                                  account.isActive &&
+                                  account.deliveryMethod !== "SUPPORT",
+                              )
+                              .map((account) => (
+                                <SelectItem
+                                  key={account.id}
+                                  value={account.id}
+                                  className="text-white"
+                                >
+                                  👑 {account.name} - {account.type}
+                                </SelectItem>
+                              ))
+                          : accounts
+                              .filter(
+                                (account) =>
+                                  account.isActive &&
+                                  account.deliveryMethod !== "SUPPORT",
+                              )
+                              .map((account) => (
+                                <SelectItem
+                                  key={account.id}
+                                  value={account.id}
+                                  className="text-white"
+                                >
+                                  {account.name} - {account.type}
+                                </SelectItem>
+                              ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -9097,7 +9187,7 @@ export default function AdminPage() {
           <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-                <Gift className="w-5 h-5 text-purple-400" />
+                <Gift className="w-4 h-4 text-purple-400" />
                 Configurar Referidos
               </DialogTitle>
               <DialogDescription className="text-slate-400">
@@ -9242,7 +9332,7 @@ export default function AdminPage() {
           <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-                <Settings className="w-5 h-5 text-emerald-400" />
+                <Settings className="w-4 h-4 text-emerald-400" />
                 Configurar Banner de Anuncio
               </DialogTitle>
               <DialogDescription className="text-slate-400">

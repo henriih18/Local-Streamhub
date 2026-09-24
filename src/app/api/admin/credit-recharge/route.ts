@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sendTelegramMessage, escapeMarkdown } from "@/lib/telegram";
+import {
+  sendTelegramMessage,
+  escapeMarkdown,
+  sendViaRechargeBot,
+  sendToRechargeGroupThread,
+} from "@/lib/telegram";
 import { requireAdmin } from "@/lib/auth";
 import { broadcastCreditsUpdate, getIO } from "@/lib/socket";
 import { rateLimit } from "@/lib/rate-limiter";
@@ -100,7 +105,8 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
       broadcastCreditsUpdate(io, userId, targetUser.credits);
     }
 
-    // Notificar al usuario por Telegram (si tiene chatId vinculado)
+    // Notificar al usuario por Telegram por el BOT DE RECARGAS
+    // (si tiene thread activo con el bot de recargas)
     if (targetUser.telegramChatId) {
       try {
         const amountFormatted = amountNumber.toLocaleString("es-CO");
@@ -109,16 +115,76 @@ export const POST = requireAdmin(async (request: NextRequest, user) => {
           targetUser.fullName || targetUser.email,
         );
 
-        const tgText =
-          `💰 *Recarga de créditos recibida*\n\n` +
-          `¡Hola *${userName}*!\n\n` +
-          `✅ Se han acreditado *${amountFormatted}* créditos a tu cuenta.\n` +
-          `💼 Nuevo saldo: *${newBalance}* créditos\n\n` +
-          `¡Gracias por tu confianza! 🙌`;
-
-        await sendTelegramMessage(targetUser.telegramChatId, tgText, {
-          parse_mode: "Markdown",
+        // Buscar el thread más reciente del usuario con el bot de recargas
+        const rechargeThread = await db.telegramSupportThread.findFirst({
+          where: {
+            userChatId: targetUser.telegramChatId,
+            botType: "recharge",
+          },
+          orderBy: { createdAt: "desc" },
         });
+
+        if (rechargeThread) {
+          //Tiene thread con el bot de recargas → enviar por ese bot
+
+          // 1. Mensaje al chat privado del usuario
+          const userMessage =
+            `✅ *Recarga procesada*\n\n` +
+            `💰 Se han acreditado *${amountFormatted}* créditos a tu cuenta.\n` +
+            `💼 Nuevo saldo: *${newBalance}* créditos\n\n` +
+            `¡Gracias por tu confianza! 🙌`;
+
+          await sendViaRechargeBot(rechargeThread.userChatId, userMessage, {
+            parse_mode: "Markdown",
+          });
+
+          // 2. Mensaje al thread del grupo (para que el agente vea confirmación)
+          const groupMessage =
+            `✅ *Recarga procesada por el admin*\n\n` +
+            `👤 *Cliente:* ${userName}\n` +
+            `💰 *Monto:* ${amountFormatted} créditos\n` +
+            `💼 *Nuevo saldo:* ${newBalance} créditos\n\n` +
+            `_Recarga completada desde el panel de administración_`;
+
+          await sendToRechargeGroupThread(
+            rechargeThread.groupId,
+            rechargeThread.threadId,
+            groupMessage,
+            { parse_mode: "Markdown" },
+          );
+
+          logger.info(
+            {
+              context: "credit_recharge_telegram_notify",
+              userId,
+              threadId: rechargeThread.threadId,
+              via: "recharge_bot",
+            },
+            "Notificación de recarga enviada por bot de recargas",
+          );
+        } else {
+          // No tiene thread con bot de recargas → fallback al bot principal
+          const tgText =
+            `💰 *Recarga de créditos recibida*\n\n` +
+            `¡Hola *${userName}*!\n\n` +
+            `✅ Se han acreditado *${amountFormatted}* créditos a tu cuenta.\n` +
+            `💼 Nuevo saldo: *${newBalance}* créditos\n\n` +
+            `¡Gracias por tu confianza\\! 🙌`;
+
+          await sendTelegramMessage(targetUser.telegramChatId, tgText, {
+            parse_mode: "Markdown",
+          });
+
+          logger.info(
+            {
+              context: "credit_recharge_telegram_notify",
+              userId,
+              via: "main_bot_fallback",
+              reason: "no_recharge_thread",
+            },
+            "Notificación de recarga enviada por bot principal (fallback)",
+          );
+        }
       } catch (telegramError) {
         // Si falla Telegram, no romper el flujo de recarga
         logger.error(

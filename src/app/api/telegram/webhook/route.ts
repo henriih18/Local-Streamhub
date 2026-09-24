@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
           state: { in: ["PENDING", "WAITING_PHONE"] },
           expiresAt: { gt: new Date() },
         },
+        orderBy: {createdAt: "desc"}
       });
 
       if (!linkToken) {
