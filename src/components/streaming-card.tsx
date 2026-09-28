@@ -175,18 +175,19 @@ export function StreamingCard({
 
       {/* Insignias especiales - Mejoradas para Exclusividad */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-        {isVendor && account.originalPrice && (
-          <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 px-2 py-0.5 text-[10px] font-bold shadow-lg shadow-blue-500/30">
-            <Percent className="w-2.5 h-2.5 mr-0.5" />
-            PRECIO VENDEDOR
-          </Badge>
-        )}
         {isSupportDelivery && (
           <Badge className="bg-gradient-to-r from-cyan-500 to-teal-500 text-white border-0 px-2 py-0.5 text-[10px] font-bold shadow-lg shadow-cyan-500/30">
             <Headphones className="w-2.5 h-2.5 mr-0.5" />
             ENTREGA POR SOPORTE
           </Badge>
         )}
+        {isVendor && account.originalPrice && (
+          <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 px-2 py-0.5 text-[10px] font-bold shadow-lg shadow-blue-500/30">
+            <Percent className="w-2.5 h-2.5 mr-0.5" />
+            PRECIO VENDEDOR
+          </Badge>
+        )}
+
         {isExclusiveAccount && (
           <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 px-2 py-0.5 text-[10px] font-bold shadow-lg shadow-amber-500/30">
             <Crown className="w-2.5 h-2.5 mr-0.5" />
