@@ -59,16 +59,22 @@ export function generateTempToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
-export function escapeMarkdown(text: string | null | undefined): string {
+/* export function escapeMarkdown(text: string | null | undefined): string {
   if (!text) return "";
   return String(text).replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+} */
+
+export function escapeMarkdown(text: string | null | undefined): string {
+  if (!text) return "";
+  // Telegram MarkdownV1 (legacy) solo considera especiales: _ * ` [ ]
+  // Los correos con + y . ya no se rompen
+  return String(text).replace(/([_*`[\]])/g, "\\$1");
 }
 
 export function maskPhone(phone: string | null | undefined): string {
   if (!phone) return "••••";
   return phone.length > 4 ? `••••${phone.slice(-4)}` : "••••";
 }
-
 
 // ============================================================
 //  Bot de Recargas (TELEGRAM_RECHARGE_BOT_TOKEN)
@@ -121,10 +127,7 @@ export async function sendViaRechargeBot(
 
     return true;
   } catch (error) {
-    logger.error(
-      { err: error },
-      "[Telegram Recharge Bot] Error de conexión",
-    );
+    logger.error({ err: error }, "[Telegram Recharge Bot] Error de conexión");
     return false;
   }
 }

@@ -9,10 +9,17 @@ import { rateLimit } from "@/lib/rate-limiter";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { logger } from "@/lib/logger";
 
-// Función para escapar caracteres especiales de Markdown
+/* // Función para escapar caracteres especiales de Markdown
 function escapeMarkdown(text: string): string {
   return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
+} */
+
+// Función para escapar caracteres especiales de Markdown
+// Telegram MarkdownV1 (legacy) solo considera especiales: _ * ` [ ]
+function escapeMarkdown(text: string): string {
+  return text.replace(/([_*`[\]])/g, "\\$1");
 }
+
 
 // Error personalizado para conflictos de stock
 class StockConflictError extends Error {
@@ -84,7 +91,6 @@ async function processReferralReward(
     const reward = Math.round(orderTotal * (rewardPercent / 100));
 
     if (reward <= 0) return;
-
 
     // Transacción atómica: actualizar referral + acreditar créditos
     await db.$transaction([
